@@ -34,6 +34,8 @@ namespace SarTracks.Tests.Website
             this.Missions = new InMemoryDbSet<Mission>();
             this.TrainingCourses = new InMemoryDbSet<TrainingCourse>();
             this.Trainings = new InMemoryDbSet<Training>();
+            this.Log = new InMemoryDbSet<LogEntry>();
+            this.ExternalReferences = new InMemoryDbSet<ExternalReference>();
         }
 
         public IDbSet<SarMember> Members { get; set; }
@@ -41,6 +43,8 @@ namespace SarTracks.Tests.Website
         public IDbSet<Mission> Missions { get; set; }
         public IDbSet<Training> Trainings { get; set; }
         public IDbSet<TrainingCourse> TrainingCourses { get; set; }
+        public IDbSet<LogEntry> Log { get; set; }
+        public IDbSet<ExternalReference> ExternalReferences { get; set; }
 
         void IDisposable.Dispose()
         {
@@ -86,6 +90,12 @@ namespace SarTracks.Tests.Website
             }
 
             return this;
+        }
+
+
+        public IEnumerable<System.Data.Entity.Validation.DbEntityValidationResult> GetValidationErrors()
+        {
+            throw new NotImplementedException();
         }
     }
 }

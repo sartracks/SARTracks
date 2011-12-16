@@ -122,10 +122,5 @@ namespace SarTracks.Website.Services
 
             return base.SaveChanges();
         }
-
-        public IEnumerable<DbEntityValidationResult> GetValidationErrors()
-        {
-            return base.GetValidationErrors();
-        }
     }   
 }
