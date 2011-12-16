@@ -1,0 +1,80 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@model SarTracks.Website.Models.SarMember
+
+@{
+    ViewBag.Title = "Details";   
+}
+
+  <div id="card" style="padding: 2px; width: 25em; border: solid 1px black; ">
+
+    <div class="wac_Field" style="font-weight:bold; text-align:center; text-transform:uppercase; margin-bottom:.3em">Field</div>
+    <div style="margin:.2em .2em 0 0; position:relative;">
+      <div style="float:left;"><img alt="Badge Photo" src="@Url.Action("Photo", new { q = @Model.Id })" style="border:2px solid black; height:12em; width:9em;" title="Badge Photo" /></div>
+      <div style="float:left; white-space:nowrap; margin-left:.4em; height:12em;">
+        <div id="cardname" style="font-weight:bold; font-size:1.2em;">@Model.FirstName @Model.LastName</div>
+<!--        <table>
+        <tr><td style="text-align:right">DEM#</td><td>7031</td></tr>
+        
+          <tr><td style="text-align:right">BirthDate</td><td>11/3/1978</td></tr>
+        
+        </table>
+        -->
+        <div id="designators"></div>
+        @Html.Raw(Model.BirthDate.HasValue ? ("Birthday: " + Model.BirthDate.Value.ToString("MM/dd/yyyy") + "<br/>") : "")
+        
+         <div style="position:absolute; bottom:.2em; right:.2em;">
+ <!--       Background Check: <br />
+        WAC Expiration: <span class="wac-status">Loading...</span><br />
+        <a href="/Members/PhotoUpload/3ed54156-b4c6-4ea2-a1c4-58e98be0b93b" onclick="window.open(this.href, 'photo', 'width=540,height=400,scrollbars=1'); return false;" target="_blank">Photo</a>
+        <a href="/Members/Edit/3ed54156-b4c6-4ea2-a1c4-58e98be0b93b" onclick="window.open(this.href, 'edit', 'width=540,height=300,scrollbars=1'); return false;" target="_blank">Edit</a>
+
+        <a href="/Members/Delete/3ed54156-b4c6-4ea2-a1c4-58e98be0b93b">Delete</a>
+        -->
+        </div>
+      </div>
+      <div style="clear:both"></div>
+    </div>
+  </div>
+
+  <h3>Addresses:</h3>
+  @Html.Partial("MemberAddresses", Model)
+
+  <h3>Contact Information:</h3>
+  @Html.Partial("MemberContacts", Model)
+
+  <script type="text/javascript">
+      function loadMemberships() {
+        $('#designators').html('Loading ...');
+        $.ajax({ type: 'POST', url: '@Url.Action("GetDesignators")', data: { q: '@Model.Id' }, dataType: 'json',
+            success: function (data) {
+                var div = $('#designators').html('');
+
+                for (var i in data)
+                {
+                    div.append(data[i].Issuer + '#: ' + data[i].Designator + '<br/>');
+                }
+            }
+         });
+      }
+
+
+      $(document).ready(function () {
+          loadMemberships();
+      });
+  </script>

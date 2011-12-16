@@ -1,0 +1,80 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@model SarTracks.Website.Models.Organization
+
+@{
+    ViewBag.Title = "Roster";
+    ViewBag.Heading = @Model.Name + " Member Roster";
+    bool canAdd = (bool?)ViewData["canAddUser"] ?? false;
+}
+
+@if (canAdd)
+{
+<span class="AddMember ButtonLink"><img style="position:relative; top:4px; margin-top:-4px;" src="@Url.Content("~/content/images/add_member_24.png")" alt="Person" /> Add New Member</span>
+<a href="@Url.Action("ImportRoster", new { q = @Model.Id })" class="ImportRoster ButtonLink"><img style="position:relative; top:4px; margin-top:-4px;" src="@Url.Content("~/content/images/add_member_24.png")" alt="Person" /> Import Roster</a>
+}
+
+<table cellspacing="0" class="data-table" id="table">
+  <thead>
+    <tr><th>Last Name</th><th>First Name</th><th>Designator</th><th>E-Mail</th><th>Primary Phone</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+  </tbody>
+  <tfoot>
+  </tfoot>
+</table>
+<script type="text/javascript">
+    function load() {
+        $('#table body').html('<tr><td colspan="6" style="text-align:center;">Loading...</td></tr>');
+
+        $.ajax({ type: 'POST', url: '@Url.Action("GetRosterList")', data: { q: '@Model.Id' }, dataType: 'json',
+            success: function (data) {
+                var table = $('#table tbody').html('');
+                for (var i in data) {
+                    var row = data[i];
+
+                    var html =
+                    '<tr><td><a href="@Url.Action("Detail", "Members")/' + row.Id + '">' + row.LastName + '</a>' +
+                    '<td><a href="@Url.Action("Detail", "Members")/' + row.Id + '">' + row.FirstName + '</a>' +
+                    '</td><td>' + ifDefined(row.Designator) +
+                    '</td><td>' + ifDefined(row.Email) +
+                    '</td><td>' + ifDefined(row.Phone) +
+                    '</td><td>' + ifDefined(row.Status) +
+                    '</td></tr>';
+
+                    table.append(html);
+                }
+                if (data.length > 0) updateSort($('#table'));
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        $('#table').tablesorter({ widgets: ['zebra'] });
+
+        $(".AddMember").click(function () {
+            loadManagement('@Url.Action("RosterManagement")', { q: '@Model.Id' }, function () {
+                $('#MembershipDialog [name="Start"]').val(formatDateTime('yy-mm-dd', new Date()));
+              //  $('#MembershipDialog [name="Member.Gender"]').val("Male");
+                $("#MembershipDialog").dialog("open");
+            });
+        });
+
+        load();
+    });
+</script>

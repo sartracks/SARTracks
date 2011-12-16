@@ -1,0 +1,103 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@model SarTracks.Website.Models.SarMember
+@using SarTracks.Website.Models
+
+@{ bool canEdit = true; }
+<table id="AddressTable" class="data-table" cellspacing="0">
+  <thead style="display:none;"><tr><th>Type</th><th>Address</th>@Html.Raw(canEdit ? "<th></th>" : "" )</tr></thead>
+  <tbody>
+  </tbody>
+</table>
+<span class="AddAddress ButtonLink">Add Address</span>
+
+<div id="AddressDialog" class="dialog" title="" style="display:none;"></div>
+<script type="text/javascript">
+    var addressTypes = ['@Html.Raw(string.Join("', '", Enum.GetNames(typeof(MemberAddressType))))'];
+
+    function loadAddresses() {
+        $('#AddressTable body').html('<tr><td>Loading...</td></tr>');
+
+        $.ajax({ type: 'POST', url: '@Url.Action("GetAddresses")', data: { q: '@Model.Id' }, dataType: 'json',
+            success: function (data) {
+                var table = $('#AddressTable tbody').html('');
+                for (var i in data) {
+                    var row = data[i];
+
+                    var html =
+                    "<tr><td><strong>" + addressTypes[row.Type] + "</strong>" +
+                    '</td><td>' + row.Address.Street + ', ' + row.Address.City + ', ' + row.Address.State + ' ' + row.Address.Zip +
+                    "</td><td><img class=\"EditAddress\" e=\"" + row.Id + "\" src=\"@Url.Content("~/Content/images/edit.png")\" />" +
+                    "<img class=\"DeleteAddress\" e=\"" + row.Id + "\" src=\"@Url.Content("~/Content/images/delete.png")\" />" +
+                    "</td></tr>";
+
+                    table.append(html);
+                }
+                updateSort($('#AddressTable'));
+                global_hideProgress();
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        $('#AddressTable').tablesorter({ widgets: ['zebra'] });
+
+        $("#AddressDialog").dialog({
+            autoOpen: false, width: 400, height: 350, modal: true,
+            buttons: {
+                "Save": function () {
+                    global_showProgress();
+                    $.post("@(Url.Action("SaveAddress"))/@Model.Id",
+                        $("#AddressForm").serialize(),
+                        function (data) {
+                            // $TODO: Handle return value                           
+                            $("#AddressDialog").html('').dialog("close");
+                            loadAddresses();
+                        });
+                },
+                Cancel: function () { $(this).html('').dialog("close"); }
+            }
+        });
+        $(".DeleteAddress").live("click", function() {
+            var id = $(this).attr("e");
+            if (confirm("Delete this address?"))
+            {
+                $.post("@(Url.Action("DeleteAddress"))/@Model.Id", { e: id },
+                        function (data) {
+                            // $TODO: Handle return value                           
+                            loadAddresses();
+                        });
+            }
+        });
+        $(".EditAddress").live("click", function () {
+            var id = $(this).attr("e");
+            $(".dialog").html('');
+            $("#AddressDialog")
+                .dialog("option", "title", "Edit Address")
+                .load("@Url.Action("EditAddress")/@Model.Id?e=" + id, function () { $("#AddressDialog").dialog("open"); });
+        });
+        $(".AddAddress").click(function () {
+            $(".dialog").html('');
+            $("#AddressDialog")
+                .dialog("option", "title", "Add Address")
+                .load("@Url.Action("AddAddress")/@Model.Id", function () { $("#AddressDialog").dialog("open"); });
+        });
+        
+        loadAddresses();
+    });
+</script>

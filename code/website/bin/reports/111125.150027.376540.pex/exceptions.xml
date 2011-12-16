@@ -1,0 +1,33 @@
+﻿<frameTree version="0.94.51023.0"><frameException type="System.NullReferenceException"><tag exceptionState="unexpected"><generatedTestRef idref="fa093409-9fe5-4fc1-9698-ce02ce0d8ed1"/>
+</tag>
+<frameNode><frame value="  at Object.GetType()" method="Object.GetType()" offset="-1"><method assemblyName="mscorlib" name="GetType" token="6000007"><declaringType assemblyName="mscorlib" name="Object" token="2000002" namespace="System"/>
+<parameter this="true" name="this" position="0"><type spec="Class"><definition assemblyName="mscorlib" name="Object" token="2000002" namespace="System"/>
+</type>
+</parameter>
+<resultType spec="Class"><definition assemblyName="mscorlib" name="Type" token="2000132" namespace="System"/>
+</resultType>
+</method>
+</frame>
+<tag exceptionState="unexpected"><generatedTestRef idref="fa093409-9fe5-4fc1-9698-ce02ce0d8ed1"/>
+</tag>
+<frameNode><frame value="  at PermissionExtensions.GetMetadata(MembershipUser) in C:\sartracks\code\website\Services\PermissionsService.cs(73)" method="PermissionExtensions.GetMetadata(MembershipUser)" offset="23" file="C:\sartracks\code\website\Services\PermissionsService.cs" line="73"><method assemblyName="SarTracks.Website" name="GetMetadata" static="true" token="60000d8"><declaringType assemblyName="SarTracks.Website" name="PermissionExtensions" token="2000015" namespace="SarTracks.Website.Services"/>
+<parameter name="user" position="0"><type spec="Class"><definition assemblyName="System.Web.ApplicationServices" name="MembershipUser" token="2000010" namespace="System.Web.Security"/>
+</type>
+</parameter>
+<resultType spec="Class"><definition assemblyName="SarTracks.Website" name="UserMetadata" token="2000013" namespace="SarTracks.Website.Services"/>
+</resultType>
+</method>
+<beforeSource><![CDATA[        public static UserMetadata GetMetadata(this MembershipUser user)
+        {
+            DataContractJsonSerializer ser = new DataContractJsonSerializer(typeof(UserMetadata));]]></beforeSource>
+<source><![CDATA[            using (var ms = new MemoryStream(Encoding.ASCII.GetBytes(user.Comment ?? "null")))]]></source>
+<afterSource><![CDATA[            {
+                return ser.ReadObject(ms) as UserMetadata ?? new UserMetadata();
+            }]]></afterSource>
+</frame>
+<tag exceptionState="unexpected"><generatedTestRef idref="fa093409-9fe5-4fc1-9698-ce02ce0d8ed1"/>
+</tag>
+</frameNode>
+</frameNode>
+</frameException>
+</frameTree>

@@ -1,0 +1,13 @@
+﻿@model SarTracks.Website.ViewModels.NavButtonViewModel
+<div class="pick">
+@if (Model.Enabled) {
+    <a @Html.Raw(string.IsNullOrEmpty(Model.Classes) ? "" : "class=\""+Model.Classes +'"') style="text-decoration:none;" href="@Model.Href">@_PickContent(Model.Text, Model.ImageName, Model.ImageAlt, Model.Enabled)</a>
+} else {
+    @_PickContent(Model.Text, Model.ImageName, Model.ImageAlt, Model.Enabled)
+}
+</div>
+
+@helper _PickContent(string text, string imageFile, string imageAlt, bool enabled)
+{
+<img src="@Url.Content("~/Content/images/" + imageFile + (enabled ? "" : "_bw") + ".png")" style="margin-bottom:-10px;" alt="@imageAlt"/><br />@text
+}

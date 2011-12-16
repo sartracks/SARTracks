@@ -1,0 +1,13 @@
+C:\sartracks\code\website\bin\SarTracks.Website.dll
+C:\sartracks\code\website\bin\SarTracks.Website.pdb
+C:\sartracks\code\website\bin\DotNetOpenAuth.dll
+C:\sartracks\code\website\bin\Microsoft.Web.Mvc.dll
+C:\sartracks\code\website\bin\DotNetOpenAuth.xml
+C:\sartracks\code\website\bin\Microsoft.Web.Mvc.pdb
+C:\sartracks\code\website\obj\Debug\ResolveAssemblyReference.cache
+C:\sartracks\code\website\obj\Debug\SarTracks.Website.dll
+C:\sartracks\code\website\obj\Debug\SarTracks.Website.pdb
+C:\sartracks\code\website\bin\EPPlus.dll
+C:\sartracks\code\website\bin\NPOI.dll
+C:\sartracks\code\website\bin\Ionic.Zip.dll
+C:\sartracks\code\website\bin\EPPlus.xml

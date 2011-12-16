@@ -1,0 +1,32 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@{
+    ViewBag.Title = "Setup";
+}
+
+<h2>Setup</h2>
+
+<ul>
+@if ((bool?)ViewData["adminGroupCreated"] == true) { <li>Created group &quot;Administrators&quot;</li> }
+
+@if (ViewData["adminPassword"] != null)
+{ <li>&quot;admin&quot; password set to &quot;@ViewData["adminPassword"]&quot;</li> }
+
+@if ((bool?)ViewData["adminInGroup"] == true) { <li>Added &quot;admin&quot; to Administrators group</li> }
+
+</ul>

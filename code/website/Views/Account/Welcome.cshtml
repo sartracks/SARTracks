@@ -1,0 +1,53 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@model SarTracks.Website.ViewModels.AccountInfo
+@using SarTracks.Website.Controllers
+@using Microsoft.Web.Mvc
+
+@{
+    ViewBag.Title = "Info";
+}
+
+<h2>Info</h2>
+
+@if (Model == null)
+{
+    <p>User is not logged in. You can create a new account @(Html.ActionLink<AccountController>(f => f.Register(), "here"))</p>
+}
+else
+{
+    <p>Logged in as <b>@Model.Username</b></p>
+    if (!Model.HasAccount)
+    {
+        <p>You do not have an account. You can @(Html.ActionLink<AccountController>(f => f.RegisterOpenId(), "link your OpenId")), or you can @(Html.ActionLink<AccountController>(f => f.Register(), "create a new account")) independent of your OpenId.</p>
+    }
+    else
+    {
+        if (Model.Organizations.Length == 0)
+        {
+            <p>You are not recognized as being a member of any SAR organizations.</p>
+            <ul>
+                <li>Submit a @(Html.ActionLink<OrganizationsController>(f => f.Create(), "new organization"))</li>
+                <li>Request to be listed with an @(Html.ActionLink<AccountController>(f => f.LinkToOrganization(), "existing organization"))</li>
+            </ul>        
+    <p></p>
+        
+
+        }
+    }
+}

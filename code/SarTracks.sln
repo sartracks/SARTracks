@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "website", "website\website.csproj", "{BDE78313-4C37-4FEE-B189-5AF127F47576}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tests-website", "tests-website\tests-website.csproj", "{F275743D-48E2-4661-881F-E1A71A436130}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9C24D6BD-E2A8-4296-86CE-76E7C8D07023}"
+	ProjectSection(SolutionItems) = preProject
+		CodeCoverage.testsettings = CodeCoverage.testsettings
+		Local.testsettings = Local.testsettings
+		SarTracks1.vsmdi = SarTracks1.vsmdi
+		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = SarTracks1.vsmdi
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BDE78313-4C37-4FEE-B189-5AF127F47576}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDE78313-4C37-4FEE-B189-5AF127F47576}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDE78313-4C37-4FEE-B189-5AF127F47576}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BDE78313-4C37-4FEE-B189-5AF127F47576}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F275743D-48E2-4661-881F-E1A71A436130}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F275743D-48E2-4661-881F-E1A71A436130}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F275743D-48E2-4661-881F-E1A71A436130}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F275743D-48E2-4661-881F-E1A71A436130}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

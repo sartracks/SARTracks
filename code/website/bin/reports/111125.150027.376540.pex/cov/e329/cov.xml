@@ -1,0 +1,315 @@
+﻿<documents created="2011-11-25 23:03:33Z"><document src="C:\sartracks\code\website\Services\PermissionsService.cs" renderPrefix="s0"><chunk hits="-1" domain="unknown"><source><![CDATA[/* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+namespace SarTracks.Website.Services
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Web;
+    using System.Web.Mvc;
+    using System.Web.Security;
+    using System.Security.Principal;
+    using System.Runtime.Serialization.Json;
+    using System.Runtime.Serialization;
+    using System.IO;
+    using System.Globalization;
+    using System.Text;
+
+    [DataContract]
+    public class UserMetadata
+    {
+        [DataMember(EmitDefaultValue=false)]
+        public Guid VerifyKey { get; set; }
+
+        [DataMember(EmitDefaultValue = false)]
+        public Guid LinkedMember { get; set; }
+    }
+
+    public interface IPermissionsService
+    {
+        string Username { get; }
+        bool IsAuthenticated { get; }
+        bool IsUser { get; }
+
+        //IPrincipal User { get; }
+        bool IsLocal(HttpRequestBase request);
+        bool IsUserInRole(string username, string role);
+        void AddUserToRole(string username, string role);
+        bool IsInRole(string role);
+        //RedirectResult LoginRedirect(string message);
+        bool CanViewOrganization(Guid orgId);
+        bool CanAdminOrganization(Guid orgId);
+        bool CanViewMember(Guid id);
+
+        string[] GetRolesForUser(string name, bool recursive);
+
+        //bool UserHasAccount { get; }
+        //MembershipUser CurrentAccount { get; }
+
+        //UserMetadata GetUserMetadata();
+        //void SetUserMetadata(UserMetadata value);
+    }
+
+    public static class PermissionExtensions
+    {
+        public static UserMetadata GetMetadata(this MembershipUser user)
+        ]]></source>
+</chunk>
+<method name="GetMetadata" namespace="SarTracks.Website.Services" type="SarTracks.Website.Services.PermissionExtensions" typeName="PermissionExtensions" token="60000d8" module="SarTracks.Website.dll"><hits><hit index="0" value="1"/>
+<hit index="1" value="1"/>
+<hit index="2" value="1"/>
+<hit index="3" value="1"/>
+<hit index="5" value="1"/>
+<hit index="6" value="1"/>
+<hit index="7" value="1"/>
+<hit index="8" value="1"/>
+<hit index="41" value="1"/>
+</hits>
+<coverage domain="usercodeundertest" unit="block" covered="4" total="15" coveredRatio="0.26666666666666666"/>
+</method>
+<chunk hits="1" offset="0000" domain="usercodeundertest"><source><![CDATA[{]]></source>
+</chunk>
+<chunk hits="-1" domain="unknown"><source><![CDATA[
+            ]]></source>
+</chunk>
+<chunk hits="1" offset="0001" domain="usercodeundertest"><source><![CDATA[DataContractJsonSerializer ser = new DataContractJsonSerializer(typeof(UserMetadata));]]></source>
+</chunk>
+<chunk hits="-1" domain="unknown"><source><![CDATA[
+            using (]]></source>
+</chunk>
+<chunk hits="1" offset="0011" domain="usercodeundertest"><source><![CDATA[var ms = new MemoryStream(Encoding.ASCII.GetBytes(user.Comment ?? "null"))]]></source>
+</chunk>
+<chunk hits="-1" domain="unknown"><source><![CDATA[)
+            ]]></source>
+</chunk>
+<chunk hits="0" offset="0030" domain="usercodeundertest"><source><![CDATA[{]]></source>
+</chunk>
+<chunk hits="-1" domain="unknown"><source><![CDATA[
+                ]]></source>
+</chunk>
+<chunk hits="0" offset="0031" domain="usercodeundertest"><source><![CDATA[return ser.ReadObject(ms) as UserMetadata ?? new UserMetadata();]]></source>
+</chunk>
+<chunk hits="-1" domain="unknown"><source><![CDATA[
+            }
+        ]]></source>
+</chunk>
+<chunk hits="0" offset="005a" domain="usercodeundertest"><source><![CDATA[}]]></source>
+</chunk>
+<chunk hits="-1" domain="unknown"><source><![CDATA[
+
+        public static void SetMetadata(this MembershipUser user, UserMetadata value)
+        {
+            DataContractJsonSerializer ser = new DataContractJsonSerializer(typeof(UserMetadata));
+            using (var ms = new MemoryStream())
+            {
+                ser.WriteObject(ms, value);
+                user.Comment = Encoding.ASCII.GetString(ms.ToArray());
+                Membership.UpdateUser(user);
+            }
+        }
+
+        public static void VerifyAccount(this MembershipUser user)
+        {
+            user.IsApproved = true;
+            UserMetadata data = user.GetMetadata();
+            data.VerifyKey = Guid.Empty;
+            user.SetMetadata(data);
+        }
+    }
+
+    public class PermissionsServiceCache
+    {
+        public static IPermissionsService GetInstance(string username)
+        {
+            if (!PermissionsServiceCache.cache.ContainsKey(username))
+            {
+                cache[username] = new PermissionsService(username);
+            }
+            return cache[username];
+        }
+
+        protected static Dictionary<string, IPermissionsService> cache = new Dictionary<string, IPermissionsService>();
+    }
+
+    public class PermissionsService : IPermissionsService
+    {
+        private MembershipUser currentUser = null;
+
+        public PermissionsService(string username)
+        {
+            this.currentUser = Membership.GetUser(username);
+            this.Username = username;
+            this.IsAuthenticated = !string.IsNullOrWhiteSpace(username);
+            this.IsUser = this.currentUser != null;
+        }
+
+ //       private HttpRequestBase request;
+        //private bool checkedUser = false;
+
+        public string Username { get; private set; }
+        public bool IsAuthenticated { get; private set; }
+        public bool IsUser { get; private set; }
+
+        //private MembershipUser GetCurrentUser()
+        //{
+        //    if (this.checkedUser == false)
+        //    {
+        //        this.currentUser = this.User.Identity.IsAuthenticated ? Membership.GetUser(this.User.Identity.Name) : null;
+        //        checkedUser = true;
+        //    }
+        //    return this.currentUser;
+        //}
+
+        //public void SetRequest(HttpRequestBase request)
+        //{
+        //    this.request = request;
+        //}
+
+        //public static IPermissionsService TestService { get; set; }
+
+        //public static IPermissionsService Create()
+        //{
+        //    return PermissionsService.TestService ?? new PermissionsService();
+        //}
+
+        //public virtual IPrincipal User
+        //{
+        //    get { return request.RequestContext.HttpContext.User; }
+        //}
+
+        //public bool UserHasAccount
+        //{
+        //    get
+        //    {
+        //        return this.GetCurrentUser() != null;
+        //    }
+        //}
+
+        //public MembershipUser CurrentAccount
+        //{
+        //    get { return this.GetCurrentUser(); }
+        //}
+
+        //public PermissionsService()
+        //{
+        //}
+
+        //private UserMetadata userMeta = null;
+        //public UserMetadata GetUserMetadata()
+        //{
+        //        if (this.userMeta == null)
+        //        {
+        //            this.userMeta = GetCurrentUser().GetMetadata();
+        //        }
+        //        return this.userMeta;
+        //}
+        //public void SetUserMetadata(UserMetadata value)
+        //{
+        //    GetCurrentUser().SetMetadata(value);
+        //    userMeta = value;
+        //}
+
+        public virtual bool IsLocal(HttpRequestBase request)
+        {
+            var ips = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces().SelectMany(f =>
+                            f.GetIPProperties().UnicastAddresses.Select(g =>
+                                    g.Address.ToString()));
+
+            return ips.Contains(request.UserHostAddress);
+        }
+
+        public virtual bool IsUserInRole(string username, string role)
+        {
+            return Roles.Provider.IsUserInRole(username, role);
+        }
+
+        public void AddUserToRole(string username, string role)
+        {
+            Roles.Provider.AddUsersToRoles(new[] { username }, new[] { role });
+        }
+
+        public bool IsInRole(string role)
+        {
+            return this.IsUserInRole(this.Username, role);
+        }
+
+        public string[] GetRolesForUser(string name, bool recursive)
+        {
+            NestedRoleProvider nested = Roles.Provider as NestedRoleProvider;
+            if (nested != null)
+            {
+                return nested.GetRolesForUser(name, recursive);
+            }
+            return Roles.Provider.GetRolesForUser(name);
+        }
+
+        //public RedirectResult LoginRedirect(string message)
+        //{
+        //    return new RedirectResult(FormsAuthentication.LoginUrl);
+        //}
+
+        public bool CanViewOrganization(Guid orgId)
+        {
+            // $TODO: CanViewOrganization from orgId
+            return true;
+        }
+
+        public bool CanAdminOrganization(Guid orgId)
+        {
+            // $TODO: CanAdminOrganization from orgId
+            return true;
+        }
+
+        public bool CanViewMember(Guid id)
+        {
+            //$TODO: CanViewMember
+            return true;
+        }
+    }
+}]]></source>
+</chunk>
+</document>
+<document src="(no sources available for some parts of System.Runtime.Serialization, website.Tests, System.Web.ApplicationServices.Explorables, System.Web.ApplicationServices)" missing="true"><method name=".ctor" type="System.Runtime.Serialization.Json.DataContractJsonSerializer" token="60011be" module="System.Runtime.Serialization.dll"><hits/>
+<coverage domain="userortestcode" unit="block" covered="2" total="2" coveredRatio="1"/>
+</method>
+<method name=".ctor" type="System.Runtime.Serialization.Json.DataContractJsonSerializer" token="60011c1" module="System.Runtime.Serialization.dll"><hits/>
+<coverage domain="userortestcode" unit="block" covered="2" total="2" coveredRatio="1"/>
+</method>
+<method name=".ctor" type="System.Runtime.Serialization.Json.DataContractJsonSerializer" token="60011c4" module="System.Runtime.Serialization.dll"><hits/>
+<coverage domain="userortestcode" unit="block" covered="3" total="3" coveredRatio="1"/>
+</method>
+<method name=".ctor" type="System.Runtime.Serialization.XmlObjectSerializer" token="60000de" module="System.Runtime.Serialization.dll"><hits/>
+<coverage domain="userortestcode" unit="block" covered="2" total="2" coveredRatio="1"/>
+</method>
+<method name="Initialize" type="System.Runtime.Serialization.Json.DataContractJsonSerializer" token="60011f4" module="System.Runtime.Serialization.dll"><hits/>
+<coverage domain="userortestcode" unit="block" covered="4" total="22" coveredRatio="0.18181818181818182"/>
+</method>
+<method name="CheckNull" type="System.Runtime.Serialization.XmlObjectSerializer" token="60000d6" module="System.Runtime.Serialization.dll"><hits/>
+<coverage domain="userortestcode" unit="block" covered="2" total="6" coveredRatio="0.33333333333333331"/>
+</method>
+<method name="GetMetadata" type="SarTracks.Website.Services.PermissionExtensionsTest" token="6000001" module="&lt;In Memory Module&gt;"><hits/>
+<coverage domain="userortestcode" unit="block" covered="1" total="2" coveredRatio="0.5"/>
+</method>
+<method name="Create" type="System.Web.Security.MembershipUserFactory" token="6000002" module="&lt;In Memory Module&gt;"><hits/>
+<coverage domain="userortestcode" unit="block" covered="1" total="2" coveredRatio="0.5"/>
+</method>
+<method name=".ctor" type="System.Web.Security.MembershipUser" token="6000085" module="System.Web.ApplicationServices.dll"><hits/>
+<coverage domain="userortestcode" unit="block" covered="4" total="25" coveredRatio="0.16"/>
+</method>
+</document>
+</documents>

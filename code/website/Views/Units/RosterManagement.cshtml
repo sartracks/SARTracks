@@ -1,0 +1,66 @@
+﻿@model SarTracks.Website.Models.UnitMembership
+@using SarTracks.Website.Models;
+
+<div id="MembershipDialog" title="Create Unit Membership" style="display:none;">
+    <p class="validateTips"></p>
+
+    <form method="post" id="NewMembershipForm" action="#">
+    <input type="hidden" value="@Model.OrganizationId" name="OrganizationId" id="OrganizationId" />
+    <div class="editor-label">  
+    <label for="Member_FirstName">FirstName</label>
+    </div>
+    <div class="editor-field">
+    <input type="text" value="" name="Member.FirstName" id="Member_FirstName">
+    <span data-valmsg-replace="true" data-valmsg-for="Member.FirstName" class="field-validation-valid"></span>
+    </div>
+    <div class="editor-label">
+    <label for="Member_LastName">LastName</label>
+    </div>
+    <div class="editor-field">
+    <input type="text" value="" name="Member.LastName" id="Member_LastName">
+    <span data-valmsg-replace="true" data-valmsg-for="Member.LastName" class="field-validation-valid"></span>
+    </div>
+    <div class="editor-label">
+    <label for="Member_Gender">Gender</label>
+    </div>
+    <div class="editor-field">
+    <select name="Member.Gender" id="Member_Gender" data-val-required="The Gender field is required." data-val="true"><option>Unknown</option>
+<option selected="selected">Male</option>
+<option>Female</option>
+</select>
+    <span data-valmsg-replace="true" data-valmsg-for="Member.Gender" class="field-validation-valid"></span>
+    </div>
+    <div class="editor-label">
+    <label for="Member_BirthDate">BirthDate</label>
+    </div>
+    <div class="editor-field">
+    <input type="text" value="" name="Member.BirthDate" id="Member_BirthDate" class="text-box single-line">
+    <span data-valmsg-replace="true" data-valmsg-for="Member.BirthDate" class="field-validation-valid"></span>
+    </div>
+    <br>
+    <fieldset>
+        <legend>Membership with @Model.Organization.Name</legend>
+        <div class="editor-label">
+        <label for="Status">Current Status</label>
+        @Html.DropDownListFor(m => m.Status.Id, new SelectList(Model.Organization.UnitStatusTypes.OrderByDescending(f => f.IsActive).ThenByDescending(f => f.IsMissionQualified), "Id", "Name", Model.Status.Id))
+        <span data-valmsg-replace="true" data-valmsg-for="Status" class="field-validation-valid"></span>
+        </div>
+
+        <div class="editor-label">
+        <label for="Start">Effective Date</label>
+        <input type="text" value="" name="Start" id="Start" data-val-required="The Start field is required." data-val="true" class="text-box single-line">
+        <span data-valmsg-replace="true" data-valmsg-for="Start" class="field-validation-valid"></span>
+        </div>
+    </fieldset>
+</form>
+</div>
+
+<script type="text/javascript">
+    setupFormDialog($('#MembershipDialog'),
+    450, 450,
+    "Create User",
+    '@Url.Action("SubmitUnitMembership")',
+    function (data) { load(); return true; } //on success update table with new object
+);
+
+</script>

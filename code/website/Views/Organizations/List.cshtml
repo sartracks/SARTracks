@@ -1,0 +1,95 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@{
+    ViewBag.Title = "Registered Organizations";
+    ViewBag.Heading = "Registered Organizations";
+}
+<table id="table" class="data-table" cellspacing="0">
+    <thead>
+        <tr>
+            <th>
+            </th>
+            <th>
+                Name
+            </th>
+            <th>Full Name</th>
+            <th>
+                Admin
+            </th>
+            <th>
+                Approved
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+<script type="text/javascript">
+    function load() {
+        $('#table body').html('<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>');
+
+        $.ajax({ type: 'POST', url: '@Url.Action("GetList")', data: null, dataType: 'json',
+            success: function (data) {
+                var table = $('#table tbody').html('');
+                for (var i in data) {
+                    var row = data[i];
+
+                    var html =
+                    "<tr><td><img src=\"@Url.Content("~/Content/images/delete.png")\" onclick=\"deleteOrg('" + row.Id + "', '" + row.Name + "');\" />" +
+                    "</td><td>" + row.Name +
+                    '</td><td><a href="@Url.Action("Home", "Organizations")/' + row.Id + '">' + row.LongName + '</a>' +
+                    "</td><td>" + row.AdminAccount +
+                    '</td><td><a href="#" onclick="setApproved(\'' + row.Id + '\',\'' + row.Name + '\','  + !row.IsApproved + ')">' + row.IsApproved + '</a>' +
+                    "</td></tr>";
+
+                    table.append(html);
+                }
+                updateSort($('#table'));
+            }
+        });
+    }
+
+    function setApproved(id, name, newState)
+    {
+      if (newState == true || confirm('Disable organization "' + name + '"?'))
+      {
+          $.ajax({type: 'POST', url: '@Url.Action("SetOrganizationApproved")', data: { id: id, approved: newState }, dataType: 'json',
+              success: function(data) {
+                load();
+              }
+          });
+      }
+    }
+
+    function deleteOrg(id, name)
+    {
+        if (confirm('Completely remove organization "'+name+'"?'))
+        {
+          $.ajax({type: 'POST', url: '@Url.Action("DoDeleteOrganization")', data: { id: id }, dataType: 'json',
+              success: function(data) {
+                load();
+              }
+          });
+        }
+    }
+
+    $(document).ready(function () {
+        $('#table').tablesorter({ widgets: ['zebra'] });
+        load();
+    });
+</script>

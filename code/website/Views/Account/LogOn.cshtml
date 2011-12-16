@@ -1,0 +1,119 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@model SarTracks.Website.ViewModels.LogOnModel
+@using DotNetOpenAuth.Mvc;
+
+@{
+    ViewBag.Title = "SARTracks Sign-In";
+}
+@section HeadArea {
+   <link rel="Stylesheet" type="text/css" href="@Url.Action("OpenIdSelector", "Resource")" />
+   <link rel="Stylesheet" type="text/css" href="@Url.Action("OpenIdAjaxTextBox", "Resource")" />
+   <script src="@Url.Content("~/Scripts/jquery.cookie.js")" type="text/javascript"></script>    
+   @MvcHtmlString.Create(Html.OpenIdSelectorStyles())
+   <style type="text/css">.loginPane
+   {
+       width: 322px;
+       height: 200px;
+       background:white;
+       background:rgba(255,255,255,.9);
+       position:absolute;
+       top:80px;
+       border:solid 1px black;
+       padding:15px;
+   }</style>
+}
+
+<div style="width:70em; margin:auto;">
+<h2>Sign-In</h2>
+<p>There are two supported methods for sign-in. The recommended method uses an account you already have with a particiating OpenID
+member. When you use OpenID sign-in your password is never transmitted to SARTracks, and you don't have to remember another password.</p>
+<p>If don't have an OpenID, or would rather create a separate SARTracks account, you can @Html.ActionLink("register here", "Register").</p>
+
+<script src="@Url.Content("~/Scripts/jquery.validate.min.js")" type="text/javascript"></script>
+<script src="@Url.Content("~/Scripts/jquery.validate.unobtrusive.min.js")" type="text/javascript"></script>
+
+@Html.ValidationSummary(true, "Login was unsuccessful. Please correct the errors and try again.")
+
+</div>
+<div style="width:765px; height:320px; margin:auto; margin-top:2em; padding:50px; background:url(@Url.Content("~/content/images/signin1.jpg")) 10px 10px no-repeat; background-size:845px 400px; border:solid 4px black; position:relative;">
+
+<div class="loginPane" style="left:60px">
+<div style="font-weight:bold; margin-bottom:1em;">Sign-In with 3rd Party OpenID</div>
+@Html.Partial("_LogonOpenId")
+</div>
+
+
+@using (Html.BeginForm())
+{
+    <div class="loginPane" style="right:60px">
+        @*<fieldset style="height:15em;">
+            <legend>Account Information</legend>*@
+            <div style="font-weight:bold; margin-bottom:1em;">Sign-In with SARTracks Account</div>
+            <div class="editor-label">
+                @Html.LabelFor(m => m.UserName)
+            </div>
+            <div class="editor-field">
+                @Html.TextBoxFor(m => m.UserName)
+                @Html.ValidationMessageFor(m => m.UserName)
+            </div>
+
+            <div class="editor-label">
+                @Html.LabelFor(m => m.Password)
+            </div>
+            <div class="editor-field">
+                @Html.PasswordFor(m => m.Password)
+                @Html.ValidationMessageFor(m => m.Password)
+            </div>
+
+            <div class="editor-label">
+                @Html.CheckBoxFor(m => m.RememberMe)
+                @Html.LabelFor(m => m.RememberMe)
+            </div>
+
+            <p>
+                <input type="submit" value="Log On" />
+            </p>
+       @* </fieldset>*@
+    </div>
+}
+</div>
+<div style="width:70em; margin:auto; margin-top:4em;">
+<p>If you have any issues, please @Html.ActionLink("contact us", "Contact", "Home").</p>
+</div>
+@*
+@model NerdDinner.Models.LogOnModel
+@using DotNetOpenAuth.Mvc;
+@{
+    ViewBag.Title = "Log On";
+}
+<h2>@ViewBag.Title</h2>
+@section HeadArea {
+   <link rel="Stylesheet" type="text/css" href="@Url.Action("OpenIdSelector", "Resource")" />
+   <link rel="Stylesheet" type="text/css" href="@Url.Action("OpenIdAjaxTextBox", "Resource")" />
+   <script src="@Url.Content("~/Scripts/jquery.cookie.js")" type="text/javascript"></script>    
+   @MvcHtmlString.Create(Html.OpenIdSelectorStyles())
+}
+
+@Html.ValidationSummary(true, "Login was unsuccessful. Please correct the errors and try again.")
+@Html.ValidationMessage("_FORM")
+@Html.Partial("_LogonOpenId")
+<div id="or">
+   OR</div>
+@Html.Partial("_LogonNative")
+*@

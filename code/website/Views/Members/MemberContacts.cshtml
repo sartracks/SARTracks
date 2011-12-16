@@ -1,0 +1,102 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@model SarTracks.Website.Models.SarMember
+@using SarTracks.Website.Models
+
+@{ bool canEdit = true; }
+<table id="ContactTable" class="data-table" cellspacing="0">
+  <thead style="display:none;"><tr><th>Type</th><th>SubType</th><th>Value</th><th></th>@Html.Raw(canEdit ? "<th></th>" : "" )</tr></thead>
+  <tbody>
+  </tbody>
+</table>
+<span class="AddContact ButtonLink">Add Contact Information</span>
+
+<div id="ContactDialog" class="dialog" title="" style="display:none;"></div>
+<script type="text/javascript">
+    var contactTypes = ['@Html.Raw(string.Join("', '", Enum.GetNames(typeof(ContactType))))'];
+
+    function loadContacts() {
+        $('#ContactTable body').html('<tr><td>Loading...</td></tr>');
+
+        $.ajax({ type: 'POST', url: '@Url.Action("GetContactInfo")', data: { q: '@Model.Id' }, dataType: 'json',
+            success: function (data) {
+                var table = $('#ContactTable tbody').html('');
+                for (var i in data) {
+                    var row = data[i];
+
+                    var html =
+                    "<tr><td><strong>" + contactTypes[row.Type] + "</strong>" +
+                    '</td><td>' + ifDefined(row.SubType) +
+                    "</td><td>" + row.Value +
+                    "</td><td><img class=\"EditContact\" contact=\"" + row.Id + "\" src=\"@Url.Content("~/Content/images/edit.png")\" />" +
+                    "<img class=\"DeleteContact\" contact=\"" + row.Id + "\" src=\"@Url.Content("~/Content/images/delete.png")\" />" +
+                    "</td></tr>";
+
+                    table.append(html);
+                }
+                updateSort($('#ContactTable'));
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        $('#ContactTable').tablesorter({ widgets: ['zebra'] });
+
+        $("#ContactDialog").dialog({
+            autoOpen: false, width: 400, height: 330, modal: true,
+            buttons: {
+                "Save": function () {
+                    $.post("@(Url.Action("SaveContactInfo"))/@Model.Id",
+                        $("#ContactForm").serialize(),
+                        function (data) {
+                            // $TODO: Handle return value                           
+                            $("#ContactDialog").html('').dialog("close");
+                            loadContacts();
+                        });
+                },
+                Cancel: function () { $(this).html('').dialog("close"); }
+            }
+        });
+        $(".DeleteContact").live("click", function() {
+            var id = $(this).attr("contact");
+            if (confirm("Delete this contact?"))
+            {
+                $.post("@(Url.Action("DeleteContactInfo"))/@Model.Id", { contact: id },
+                        function (data) {
+                            // $TODO: Handle return value                           
+                            loadContacts();
+                        });
+            }
+        });
+        $(".EditContact").live("click", function () {
+            var id = $(this).attr("contact");
+            $(".dialog").html('');
+            $("#ContactDialog")
+                .dialog("option", "title", "Edit Contact Information")
+                .load("@Url.Action("EditContactInfo")/@Model.Id?contact=" + id, function () { $("#ContactDialog").dialog("open"); });
+        });
+        $(".AddContact").click(function () {
+            $(".dialog").html('');
+            $("#ContactDialog")
+                .dialog("option", "title", "Add Contact Information")
+                .load("@Url.Action("AddContactInfo")/@Model.Id", function () { $("#ContactDialog").dialog("open"); });
+        });
+        
+        loadContacts();
+    });
+</script>

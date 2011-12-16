@@ -1,0 +1,72 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@model SarTracks.Website.Models.SarUnit
+@{
+    ViewBag.Title = "Create";
+}
+@*<script src="@Url.Content("~/Scripts/jquery.validate.min.js")" type="text/javascript"></script>
+<script src="@Url.Content("~/Scripts/jquery.validate.unobtrusive.min.js")" type="text/javascript"></script>
+*@<h2>
+    Create a New Organization</h2>
+<p>
+    Complete the following form to register a new organization. The application will
+    be reviewed, and an email will be sent to you after verification.</p>
+@using (Html.BeginForm())
+{
+    @Html.ValidationSummary(true, "Account creation was unsuccessful. Please correct the errors and try again.")
+    <div>
+        <fieldset>
+            <legend>Organization Information</legend>
+            <div class="editor-label">
+                @Html.LabelFor(m => m.LongName)
+            </div>
+            <div class="editor-field">
+                @Html.TextBoxFor(m => m.LongName)
+                @Html.ValidationMessageFor(m => m.LongName)
+            </div>
+
+            <div class="editor-label">
+                @Html.LabelFor(m => m.Name)
+            </div>
+            <div class="editor-field">
+                @Html.TextBoxFor(m => m.Name)
+                @Html.ValidationMessageFor(m => m.Name)
+            </div>
+
+            <div class="editor-label">
+                @Html.LabelFor(m => m.TimeZone)
+            </div>
+            <div class="editor-field">
+                @Html.DropDownListFor(m => m.TimeZone, (SelectList)ViewData["timezones"])
+                @Html.ValidationMessageFor(m => m.LongName)
+            </div>
+
+            <div class="editor-label">
+                @Html.LabelFor(m => m.AdminAccount)
+            </div>
+            <div class="editor-field">
+                @Model.AdminAccount
+            </div>
+
+
+            <p>
+                <input type="submit" value="Register" />
+            </p>
+        </fieldset>
+    </div>
+}

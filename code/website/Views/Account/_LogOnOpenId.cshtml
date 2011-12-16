@@ -1,0 +1,29 @@
+﻿@model dynamic
+@using DotNetOpenAuth.Mvc;
+@using DotNetOpenAuth.OpenId.RelyingParty;
+<div id="login-oauth">
+  @* <fieldset style="height:15em;">
+       <legend>via 3rd Party (recommended)</legend> *@
+       @using (Html.BeginForm("LogOnPostAssertion", "Account"))
+       {
+           @Html.Hidden("ReturnUrl", Request.QueryString["ReturnUrl"] ?? Url.Action("Index", "Home"), new { id = "ReturnUrl" })
+           @Html.Hidden("openid_openidAuthData")
+           <div>
+               @MvcHtmlString.Create(Html.OpenIdSelector(new SelectorButton[] {
+new SelectorProviderButton("https://www.google.com/accounts/o8/id", Url.Content("~/Content/images/google.gif")),
+new SelectorOpenIdButton(Url.Content("~/Content/images/openid.gif")),
+}))
+               <div class="helpDoc">
+                   <p>
+                       If you have logged in previously, click the same button you did last time.
+                   </p>
+               </div>
+           </div>
+       }
+ @*  </fieldset>*@
+</div>
+@{     
+   var options = new OpenIdSelector();
+   options.TextBox.LogOnText = "Log On";
+}
+@MvcHtmlString.Create(Html.OpenIdSelectorScripts(options, null))

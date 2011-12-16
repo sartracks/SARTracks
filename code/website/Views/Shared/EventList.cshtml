@@ -1,0 +1,112 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@model System.Type
+@{
+    ViewBag.Title = "Missions List";
+    ViewBag.Heading = "Missions List";
+    bool canEdit = true;
+    string tableName = Model.Name + "List";
+    string dialogName = Model.Name + "Dialog";
+}
+
+<table cellspacing="0" class="data-table" id="@tableName">
+<thead>
+<tr>@Html.Raw(canEdit ? "<th></th>" : "")<th>Number</th><th>Date</th><th>Name</th><th>Persons</th><th>Hours</th><th>Miles</th></tr>
+</thead>
+<tbody>
+</tbody>
+<tfoot>
+</tfoot>
+</table>
+
+<script type="text/javascript">
+ function load@(Model.Name)() {
+        $('#@tableName body').html('<tr><td colspan="50"><img src="@Url.Content("~/Content/images/progress.gif")" alt="Loading..." /></td></tr>');
+
+        $.ajax({ type: 'POST', url: '@Url.Action("GetList", Model.Name + "s")', data: null, dataType: 'json',
+            success: function (data) {
+                var table = $('#@tableName tbody').html('');
+                for (var i in data) {
+                    var row = data[i];
+                    fixTime(row, ['StartTime']);
+                    var html =
+                    "<tr>@Html.Raw(canEdit ? "<td></td>" : "")" +
+                     "</td><td>" + row.Number +
+                     "</td><td>" + formatDateTime("mm/dd/yy", row.StartTime) +
+                     '</td><td><a href="@Url.Action("Roster", Model.Name + "s")/' + row.Id + '">' + row.Title + '</a>' +
+                     '</td><td class="r">' + row.Persons +
+                     '</td><td class="r">' + row.Hours.toFixed(2) +
+                     '</td><td class="r">' + row.Miles +
+//                    "</td><td><img class=\"EditContact\" contact=\"" + row.Id + "\" src=\"@Url.Content("~/Content/images/edit.png")\" />" +
+//                    "<img class=\"DeleteContact\" contact=\"" + row.Id + "\" src=\"@Url.Content("~/Content/images/delete.png")\" />" +
+                    "</td></tr>";
+
+                    table.append(html);
+                }
+                updateSort($('#@tableName'));
+            }
+        });
+    }
+
+$(document).ready(function () {
+        $('#@tableName').tablesorter({ widgets: ['zebra'] });
+@*
+        $("#ContactDialog").dialog({
+            autoOpen: false, width: 400, height: 330, modal: true,
+            buttons: {
+                "Save": function () {
+                    $.post("@(Url.Action("SaveContactInfo"))/@Model.Id",
+                        $("#ContactForm").serialize(),
+                        function (data) {
+                            // $TODO: Handle return value                           
+                            $("#ContactDialog").html('').dialog("close");
+                            loadContacts();
+                        });
+                },
+                Cancel: function () { $(this).html('').dialog("close"); }
+            }
+        });
+        $(".DeleteContact").live("click", function() {
+            var id = $(this).attr("contact");
+            if (confirm("Delete this contact?"))
+            {
+                $.post("@(Url.Action("DeleteContactInfo"))/@Model.Id", { contact: id },
+                        function (data) {
+                            // $TODO: Handle return value                           
+                            loadContacts();
+                        });
+            }
+        });
+        $(".EditContact").live("click", function () {
+            var id = $(this).attr("contact");
+            $(".dialog").html('');
+            $("#ContactDialog")
+                .dialog("option", "title", "Edit Contact Information")
+                .load("@Url.Action("EditContactInfo")/@Model.Id?contact=" + id, function () { $("#ContactDialog").dialog("open"); });
+        });
+        $(".AddContact").click(function () {
+            $(".dialog").html('');
+            $("#ContactDialog")
+                .dialog("option", "title", "Add Contact Information")
+                .load("@Url.Action("AddContactInfo")/@Model.Id", function () { $("#ContactDialog").dialog("open"); });
+        });
+        
+*@
+        load@(Model.Name)();
+    });
+</script>

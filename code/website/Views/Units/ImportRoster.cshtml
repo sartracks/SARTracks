@@ -1,0 +1,75 @@
+﻿@model SarTracks.Website.Models.Organization
+
+@{
+    ViewBag.Title = "Import Roster : " + Model.LongName;
+}
+
+<h2>Import Roster for @Model.LongName</h2>
+<p>Use this page to quickly import your organization's roster into SARTracks.</p>
+<p>Both Excel 97/2003 (.xls) and Excel 2007 (.xlsx) files are supported. Save your roster using the following columns.
+Some columns are optional and can be omitted from the file. Headers should be placed on the first row and match the
+column names below. Data begins on the second row.</p>
+
+<table cellspacing="0" class="data-table">
+<thead>
+<tr>
+@foreach (var col in (string[])ViewData["columnNames"])
+{
+    <th>@col</th>
+}
+</tr></thead>
+</table>
+
+<p>Download sample files: [ <a href="@Url.Content("~/Content/files/sample-roster-import.xlsx")">XLSX</a> ][
+<a href="@Url.Content("~/Content/files/sample-roster-import.xls")">XLS</a> ]</p>
+
+@{Html.BeginForm("ImportRoster", "Units", FormMethod.Post, new { enctype = "multipart/form-data" });}
+<fieldset title="Upload Organization Roster" style="margin: 1.5em 0">
+<label for="rosterFile">Roster File:</label><br />
+<input type="file" name="rosterFile" id="rosterFile" /><br />
+<input type="submit" id="sendRoster" value="Upload" />
+</fieldset>
+@{Html.EndForm();}
+
+<table cellspacing="0" class="data-table">
+<thead><tr><th>Column Name</th><th>Required Column?</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><strong>MemberId</strong></td><td>Optional</td>
+<td>Unique identifier for the member in your organization's database. If you do not store your records in Access or other database software,
+you likely won't use this column. This value will be used to correlate the member between the
+two databases, even if his/her name or designator changes. If the MemberId is already in the SARTracks database, that record will be replaced
+with the values in the uploaded file. <strong>Otherwise, new records are created for all rows in the file.</strong></td></tr>
+
+<tr><td><strong>LastName</strong></td><td>Required</td>
+<td>The last name (surname) of the member.</td></tr>
+
+<tr><td><strong>FirstName</strong></td><td>Required</td>
+<td>The member's preferred given name. Legal names, if different, may be entered later using the member's detailed record.
+ If the member only has one name, it should be located in the LastName column; the FirstName column should be left blank.</td></tr>
+
+<tr><td><strong>Designator</strong></td><td>Optional</td>
+<td>A badge number or worker number issued to the member by a governing body.</td></tr>
+
+<tr><td><strong>Gender</strong></td><td>Optional</td>
+<td>The member's gender (Male/Female/Unknown). If the column is omitted or the row left blank, the database will record 'Unknown'.</td></tr>
+
+<tr><td><strong>BirthDate</strong></td><td>Optional</td>
+<td>The member's date of birth. Used for general reporting, such as distinction between adults and youths.</td></tr>
+
+<tr><td><strong>Street<br />City<br />State<br />ZIP</strong></td><td>Optional</td>
+<td>The address of the member's primary residence or mail stop.</td></tr>
+
+<tr><td><strong>Home<br />Cell<br />Work<br />Pager</strong></td><td>Optional</td>
+<td>Phone numbers of the member. If a number applies to more than one category (ex: Cell phone is used as home phone),
+please record it only in the most appropriate column.</td></tr>
+
+<tr><td><strong>Email</strong></td><td>Optional</td>
+<td>The member's primary email address.</td></tr>
+
+<tr><td><strong>DateJoined</strong></td><td>Optional</td>
+<td>The date the member most recently joined the organization.</td></tr>
+
+<tr><td><strong>Status</strong></td><td>Optional</td>
+<td>The member's current status with the unit. If not included, will default to 'Active'.</td></tr>
+</tbody>
+</table>

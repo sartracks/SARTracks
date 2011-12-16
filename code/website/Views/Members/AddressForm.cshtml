@@ -1,0 +1,65 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@model SarTracks.Website.Models.MemberAddress
+@using SarTracks.Website.Models;
+
+@using (Html.BeginForm("SaveAddress", "Members", FormMethod.Post, new { id = "AddressForm" }))
+{
+@Html.HiddenFor(f => f.Id)
+
+    @Html.ValidationSummary(true, "Address could not be saved. Please correct the errors and try again.")
+    <div class="editor-label">
+    @Html.LabelFor(m => m.Type)
+    </div>
+    <div class="editor-field">
+    @Html.DropDownListFor(m => m.Type, new SelectList(Enum.GetNames(typeof(MemberAddressType)), Model.Type))
+    @Html.ValidationMessageFor(m => m.Type)
+    </div>
+
+    <div class="editor-label">
+    @Html.LabelFor(m => m.Address.Street)
+    </div>
+    <div class="editor-field">
+    @Html.TextBoxFor(m => m.Address.Street)
+    @Html.ValidationMessageFor(m => m.Address.Street)
+    </div>
+        
+    <div class="editor-label">
+    @Html.LabelFor(m => m.Address.City)
+    </div>
+    <div class="editor-field">
+    @Html.TextBoxFor(m => m.Address.City)
+    @Html.ValidationMessageFor(m => m.Address.City)
+    </div>
+    
+        <div class="editor-label">
+    @Html.LabelFor(m => m.Address.State)
+    </div>
+    <div class="editor-field">
+    @Html.TextBoxFor(m => m.Address.State)
+    @Html.ValidationMessageFor(m => m.Address.State)
+    </div>
+    
+        <div class="editor-label">
+    @Html.LabelFor(m => m.Address.Zip)
+    </div>
+    <div class="editor-field">
+    @Html.TextBoxFor(m => m.Address.Zip)
+    @Html.ValidationMessageFor(m => m.Address.Zip)
+    </div>
+}

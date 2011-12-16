@@ -1,0 +1,70 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@model SarTracks.Website.Models.MemberContact
+@using SarTracks.Website.Models;
+
+@using (Html.BeginForm("SaveContact", "Members", FormMethod.Post, new { id = "ContactForm" }))
+{
+@Html.HiddenFor(f => f.Id)
+
+    @Html.ValidationSummary(true, "Contact could not be saved. Please correct the errors and try again.")
+    <div class="editor-label">
+    @Html.LabelFor(m => m.Type)
+    </div>
+    <div class="editor-field">
+    @Html.DropDownListFor(m => m.Type, new SelectList(Enum.GetNames(typeof(ContactType)), Model.Type), new { onchange = "contact_updateSubType(this.value);" })
+    @Html.ValidationMessageFor(m => m.Type)
+    </div>
+
+    <div class="editor-label">
+    @Html.LabelFor(m => m.SubType)
+    </div>
+    <div class="editor-field">
+    @Html.DropDownListFor(m => m.SubType, new SelectList(new string[0]))
+    @Html.ValidationMessageFor(m => m.SubType)
+    </div>
+        
+    <div class="editor-label">
+    @Html.LabelFor(m => m.Value)
+    </div>
+    <div class="editor-field">
+    @Html.TextBoxFor(m => m.Value)
+    @Html.ValidationMessageFor(m => m.Value)
+    </div>
+}
+<script type="text/javascript">
+    var subTypes = { 'Phone': ['Cell', 'Home', 'Work', 'Pager', 'Other'],
+        'Email': null,
+        'Radio': ['HAM']
+    };
+
+    function contact_updateSubType(type, selected) {
+        var select = $("#SubType").html('');
+
+        for (option in subTypes[type]) {
+            var o = $('<option>' + subTypes[type][option] + '</option>');
+            if (o[0].value == selected) o.attr('selected', 'selected');
+            select.append(o);
+        }
+        select[0].disabled = (subTypes[type] == null || subTypes[type].length == 0);
+    }
+
+    $(document).ready(function () {
+        contact_updateSubType('@Model.Type', '@Model.SubType');
+    });
+</script>

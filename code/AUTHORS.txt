@@ -1,0 +1,5 @@
+This file is now the amalgamated list of authors, contributors and credits
+for SARTracks. Hopefully by keeping these all in one place, they will remain
+more accurate.
+
+The current author of SARTracks is Matt Cosand (admin@sartracks.net)

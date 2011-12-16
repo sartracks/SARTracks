@@ -1,0 +1,52 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@model SarTracks.Website.ViewModels.VerifyAccountModel
+@{
+    ViewBag.Title = "Verify Account";
+}
+<h2>
+    Verify Account</h2>
+<p>
+    Verify your new account by supplying the verification key that was sent to your
+    account's email address.</p>
+@using (Html.BeginForm())
+{
+    @Html.ValidationSummary(true, "Verification Failed. Please correct the errors and try again.")
+    <div>
+        <fieldset>
+            @*            <legend>Organization Information</legend>*@
+            <div class="editor-label">
+                @Html.LabelFor(m => m.UserName)
+            </div>
+            <div class="editor-field">
+                @Html.TextBoxFor(m => m.UserName)
+                @Html.ValidationMessageFor(m => m.UserName)
+            </div>
+            <div class="editor-label">
+                @Html.LabelFor(m => m.Key)
+            </div>
+            <div class="editor-field">
+                @Html.TextBoxFor(m => m.Key)
+                @Html.ValidationMessageFor(m => m.Key)
+            </div>
+            <p>
+                <input type="submit" value="Verify" />
+            </p>
+        </fieldset>
+    </div>
+}

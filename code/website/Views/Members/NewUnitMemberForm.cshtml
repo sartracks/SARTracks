@@ -1,0 +1,98 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@model SarTracks.Website.ViewModels.NewUnitMemberViewModel
+@using SarTracks.Website.Models;
+@{
+    ViewBag.Title = "Member Details";
+}
+
+@using (Html.BeginForm("NewUnitMember", "Members", FormMethod.Post, new { id = "NewMemberForm" }))
+{
+@Html.HiddenFor(f => f.Member.Id)
+@Html.HiddenFor(f => f.Unit.Id)
+
+    @Html.ValidationSummary(true, "Member could not be saved. Please correct the errors and try again.")
+    <div class="editor-label">
+    @Html.LabelFor(m => m.Member.FirstName)
+    </div>
+    <div class="editor-field">
+    @Html.TextBoxFor(f => f.Member.FirstName)
+    @Html.ValidationMessageFor(m => m.Member.FirstName)
+    </div>
+
+    <div class="editor-label">
+    @Html.LabelFor(m => m.Member.LastName)
+    </div>
+    <div class="editor-field">
+    @Html.TextBoxFor(f => f.Member.LastName)
+    @Html.ValidationMessageFor(m => m.Member.LastName)
+    </div>
+    
+    <div class="editor-label">
+    @Html.LabelFor(m => m.Member.Gender)
+    </div>
+    <div class="editor-field">
+    @Html.DropDownListFor(m => m.Member.Gender, new SelectList(Enum.GetNames(typeof(Gender)), Model.Member.Gender))
+    @Html.ValidationMessageFor(m => m.Member.Gender)
+    </div>
+            
+    <div class="editor-label">
+    @Html.LabelFor(m => m.Member.BirthDate)
+    </div>
+    <div class="editor-field">
+    @Html.EditorFor(m => m.Member.BirthDate)
+    @Html.ValidationMessageFor(m => m.Member.BirthDate)
+    </div>
+    <br />
+    <fieldset>
+        <legend>Membership with @Model.Unit.Name</legend>
+        <div class="editor-label">
+        @Html.LabelFor(m => m.Membership.Status, "Current Status")
+        @Html.DropDownListFor(m => m.Membership.Status.Id, new SelectList(Model.Unit.UnitStatusTypes.OrderByDescending(f => f.IsActive).ThenByDescending(f => f.IsMissionQualified), "Id", "Name", Model.Membership.Status.Id))
+        @Html.ValidationMessageFor(m => m.Membership.Status)
+        </div>
+
+        <div class="editor-label">
+        @Html.LabelFor(m => m.Membership.Start, "Effective Date")
+        @Html.EditorFor(m => m.Membership.Start)
+        @Html.ValidationMessageFor(m => m.Membership.Start)
+        </div>
+    </fieldset>
+}
+@*<script type="text/javascript">
+    var subTypes = { 'Phone': ['Cell', 'Home', 'Work', 'Pager', 'Other'],
+        'Email': null,
+        'Radio': ['HAM']
+    };
+
+    function contact_updateSubType(type, selected) {
+        var select = $("#SubType").html('');
+
+        for (option in subTypes[type]) {
+            var o = $('<option>' + subTypes[type][option] + '</option>');
+            if (o[0].value == selected) o.attr('selected', 'selected');
+            select.append(o);
+        }
+        select[0].disabled = (subTypes[type] == null || subTypes[type].length == 0);
+    }
+
+    $(document).ready(function () {
+        contact_updateSubType('@Model.Type', '@Model.SubType');
+    });
+</script>
+*@

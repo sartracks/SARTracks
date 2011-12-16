@@ -1,0 +1,79 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@model SarTracks.Website.ViewModels.HomePageViewModel
+@using SarTracks.Website.ViewModels
+@{
+    ViewBag.Title = "SARTracks Search and Rescue Database";
+}
+
+<h2>SARTracks Search and Rescue Database</h2>
+
+@if (!Model.LoggedIn)
+{
+<div class="warning-box" style="width:35em;">You are not currently signed in, and are not able to access personal or team records. For access to these records,
+you must @Html.ActionLink("sign in", "LogOn", "Account").
+</div>
+} else if (!Model.HasAccount) {
+<div class="warning-box" style="width:35em;">Your OpenID has not been associated with a profile on SARTracks. For access to personal and team records, you
+should @Html.ActionLink("link your OpenID", "RegisterOpenId", "Account") to an account.</div>
+}
+else if (Model.LinkedMember == Guid.Empty)
+{
+<div class="warning-box" style="width:35em;">Your account isn't linked to a SAR member profile. To access your personal records, you need to
+contact your team's database manager or @Html.ActionLink("create a new team", "Create", "Organizations").</div>
+}
+<div>
+<div>
+    <h3>My Profile:</h3>
+    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "My Details", Href = Url.Action("Detail", "Members", new { q = Model.LinkedMember }), Enabled = Model.MyDetails, ImageName = "id_card", ImageAlt = "id card" });}
+    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "My Training", Href = Url.Action("Training", "Members", new { q = Model.LinkedMember }), Enabled = Model.MyTraining, ImageName = "easel", ImageAlt = "Easel" });}
+    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "My Missions", Href = Url.Action("Missions", "Members", new { q = Model.LinkedMember }), Enabled = Model.MyMissions, ImageName = "mission", ImageAlt = "Mission Notebook" });}
+</div>
+
+<div>
+    <h3>My Team/Unit: 
+    @if (Model.MyUnits.Length > 0)
+    {
+    <select id="myUnit">
+    @foreach (var unit in Model.MyUnits)
+    {
+    <option value="@unit.Id">@unit.Name</option>
+    }
+    </select>}</h3>
+
+    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Unit Roster", Href = Url.Action("Roster", "Units")+"?q=", Enabled = Model.UnitRoster, ImageName = "phone_book", ImageAlt = "phone book", Classes = "teamLink" });}
+    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Unit Training", Href = Url.Action("Training", "Units")+"?q=", Enabled = Model.UnitTraining, ImageName = "easel", ImageAlt = "Easel", Classes = "teamLink" });}
+    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Unit Missions", Href = Url.Action("Missions", "Units")+"?q=", Enabled = Model.UnitMissions, ImageName = "mission", ImageAlt = "Mission Notebook", Classes = "teamLink" });}
+</div>
+
+<div>
+    <h3>SAR Community:</h3>
+    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Mission Reports", Href = Url.Action("List", "Missions"), Enabled = Model.PublicReports, ImageName = "mission", ImageAlt = "Mission Notebook" });}
+    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Mapping", Href = Url.Action("Index", "Map"), Enabled = Model.PublicMapping, ImageName = "globe", ImageAlt = "globe" });}
+</div>
+</div>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("#myUnit").change(function () {
+            var unitId = this.value;
+            $(".teamLink").each(function () {
+                this.href = this.href.substring(0, this.href.indexOf("?q=") + 3) + unitId;
+            });
+        }).change();
+    });
+</script>

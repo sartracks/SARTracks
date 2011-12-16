@@ -1,0 +1,129 @@
+﻿@* Copyright 2011 Matt Cosand and others (see AUTHORS.TXT)
+ *
+ * This file is part of SARTracks.
+ *
+ *  SARTracks is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  SARTracks is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
+ *@
+@model SarTracks.Website.Models.SarUnit
+
+@{
+    ViewBag.Title = "StatusTypes";
+    ViewBag.Heading = "Status Types";
+}
+
+
+
+<table id="table" class="data-table" cellspacing="0">
+    <thead>
+        <tr>
+            <th>
+            </th>
+            <th>
+                Name
+            </th>
+            <th>Active?</th>
+            <th>
+                Respond to Missions?
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+<span class="AddLink ButtonLink">Add New Status</span>
+
+<div id="StatusDialog" title="" style="display:none;"></div>
+<script type="text/javascript">
+    function load() {
+        $('#table body').html('<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>');
+
+        $.ajax({ type: 'POST', url: '@Url.Action("GetStatusTypes")', data: { q: '@Model.Id' }, dataType: 'json',
+            success: function (data) {
+                var table = $('#table tbody').html('');
+                for (var i in data) {
+                    var row = data[i];
+
+                    var html =
+                    "<tr><td><img src=\"@Url.Content("~/Content/images/delete.png")\" onclick=\"deleteStatus('" + row.Id + "', '" + row.Name + "');\" />" +
+                    "<img class=\"EditLink\" statusId=\"" + row.Id + "\" src=\"@Url.Content("~/Content/images/edit.png")\" />" +
+                    "</td><td>" + row.Name +
+                    '</td><td>' + row.IsActive +
+                    "</td><td>" + row.IsMissionQualified +
+                    "</td></tr>";
+
+                    table.append(html);
+                }
+                updateSort($('#table'));
+            }
+        });
+    }
+
+//    function setApproved(id, name, newState)
+//    {
+//      if (newState == true || confirm('Disable organization "' + name + '"?'))
+//      {
+//          $.ajax({type: 'POST', url: '@Url.Action("SetOrganizationApproved")', data: { id: id, approved: newState }, dataType: 'json',
+//              success: function(data) {
+//                load();
+//              }
+//          });
+//      }
+//    }
+
+//    function deleteOrg(id, name)
+//    {
+//$TODO: re-implement delete status
+//        if (confirm('Completely remove organization "'+name+'"?'))
+//        {
+//          $.ajax({type: 'POST', url: '@Url.Action("DoDeleteOrganization")', data: { id: id }, dataType: 'json',
+//              success: function(data) {
+//                load();
+//              }
+//          });
+//        }
+//    }
+
+    $(document).ready(function () {
+        $('#table').tablesorter({ widgets: ['zebra'] });
+
+        $("#StatusDialog").dialog({
+            autoOpen: false, width: 400, height: 330, modal: true,
+            buttons: {
+                "Save": function () {
+                    $.post("@(Url.Action("SaveStatus"))/@Model.Id",
+                        $("#StatusForm").serialize(),
+                        function (data) {
+                            // $TODO: Handle return value                            
+                            $("#StatusDialog").dialog("close");
+                            load();
+                        });
+                },
+                Cancel: function () { $(this).dialog("close"); }
+            }
+        });
+        $(".EditLink").live("click", function () {
+            var id = $(this).attr("statusId");
+            $("#StatusDialog").html("")
+                .dialog("option", "title", "Edit Status")
+                .load("@Url.Action("EditStatus")/@Model.Id?status=" + id, function () { $("#StatusDialog").dialog("open"); });
+        });
+        $(".AddLink").click(function () {
+            $("#StatusDialog").html("")
+                .dialog("option", "title", "Add Status")
+                .load("@Url.Action("CreateStatus")/@Model.Id", function () { $("#StatusDialog").dialog("open"); });
+        });
+        
+        load();
+    });
+</script>
