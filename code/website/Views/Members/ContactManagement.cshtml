@@ -1,0 +1,77 @@
+﻿@model SarTracks.Website.Models.SarMember
+@using SarTracks.Website.Models;
+@* BEGIN MANAGEMENT *@
+<div id="ContactDialog" title="Create Member Contact" style="display: none;">
+    <form method="post" id="ContactForm" action="#"> 
+    <p name="validateTips" class="validmsg" style="display:none;"></p>
+    <input type="hidden" name="MemberId" data-bind="value: MemberId" />
+    <input type="hidden" name="Id" data-bind="value: Id" />
+    <div class="editor-label"><label for="Type">Type</label></div>
+    <div class="editor-field">
+    <select data-bind="options: [0,1,2], optionsText: function(f) { return contactTypes[f]; }, value: Type" data-val="true" data-val-required="The Type field is required." name="Type">
+    </select>
+    <span class="validmsg" validates="Type"></span>
+    </div>
+
+    <div data-bind="visible: subTypes[Type()] != null">
+    <label for="SubType">SubType</label>
+    <div class="editor-field">
+    <select id="SubType" name="SubType" data-bind="value: SubType, options: subTypes[Type()]"></select>
+    <span class="validmsg" validates="SubType"></span>
+    </div>
+    </div>
+
+    <div class="editor-label">
+    <label for="Value">Value</label>
+    </div>
+    <div class="editor-field">
+    <input data-bind="value: Value" name="Value" type="text" class="required" />
+    <span class="validmsg" validates="Value"></span>
+    </div>
+    </form>
+</div>
+
+<div id="AddressDialog" title="Create Member Address" style="display: none;">
+    <form method="post" id="AddressForm" action="#">
+    <p name="validateTips" class="validmsg" style="display:none;"></p>
+    <input type="hidden" name="MemberId" data-bind="value: MemberId" />
+    <input type="hidden" name="Id" data-bind="value: Id" />
+    <div class="editor-label"><label for="Type">Type</label></div>
+    <div class="editor-field">
+        <select data-bind="options: [0,1], optionsText: function(f) { return addressTypes[f]; }, value: Type" name="Type">
+        </select>
+        <span class="validmsg" validates="Type"></span>
+    </div>
+    <div class="editor-label"><label for="Address_Street">Street</label></div>
+    <div class="editor-field">
+        <input name="Address.Street" type="text" data-bind="value: Address.Street" />
+        <span class="validmsg" validates="Address.Street"></span>
+    </div>
+    <div class="editor-label"><label for="Address_City">City</label></div>
+    <div class="editor-field">
+        <input name="Address.City" type="text" data-bind="value: Address.City" />
+        <span class="validmsg" validates="Address.City"></span>
+    </div>
+    <div class="editor-label"><label for="Address_State">State</label></div>
+    <div class="editor-field">
+        <input name="Address.State" type="text" data-bind="value: Address.State" />
+        <span class="validmsg" validates="Address.State"></span>
+    </div>
+    <div class="editor-label"><label for="Address_Zip">Zip</label></div>
+    <div class="editor-field">
+        <input name="Address.Zip" type="text" data-bind="value: Address.Zip" />
+        <span class="validmsg" validates="Address.Zip"></span>
+    </div>
+    </form>
+</div>
+<script type="text/javascript">
+    var contactModel;
+    var addressModel;
+
+    $(document).ready(function () {
+        setupFormDialog2($('#ContactDialog'), 300, 450, "Save Member Contact", '@Url.Action("SubmitContact")', function (data) { loadContacts(); });
+        setupFormDialog2($('#AddressDialog'), 350, 350, "Save Address", '@Url.Action("SubmitAddress")', function (data) { loadAddresses(); });
+    });
+</script>
+
+@* END MANAGEMENT *@

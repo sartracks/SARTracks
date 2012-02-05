@@ -186,19 +186,24 @@
     <Content Include="Content\themes\base\jquery.ui.tabs.css" />
     <Content Include="Content\themes\base\jquery.ui.theme.css" />
     <Content Include="Global.asax" />
+    <Content Include="knockout.html" />
     <Content Include="Scripts\break.js" />
     <Content Include="Scripts\common.js" />
-    <Content Include="Scripts\jquery-1.5.1.min.js" />
+    <Content Include="Scripts\jquery-1.7.1.min.js" />
     <Content Include="Scripts\jquery-ui-1.8.11.min.js" />
     <Content Include="Scripts\jquery.cookie.js" />
     <Content Include="Scripts\jquery.tablesorter.js" />
     <Content Include="Scripts\jquery.validate.min.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
     <Content Include="Scripts\modernizr-1.7.min.js" />
-    <Content Include="Views\Members\ContactForm.cshtml" />
-    <Content Include="Views\Members\AddressForm.cshtml" />
     <None Include="Content\files\sample-roster-import.xls" />
     <None Include="Content\files\sample-roster-import.xlsx" />
+    <Content Include="Views\Account\MyRoles.cshtml" />
+    <Content Include="Views\Account\Settings.cshtml" />
+    <Content Include="Views\Admin\Index.cshtml" />
+    <Content Include="Views\Admin\DisplaySecurity.cshtml" />
+    <Content Include="Views\Account\ResetPassword.cshtml" />
+    <Content Include="Views\Account\ResetPasswordSuccess.cshtml" />
     <None Include="Views\Members\MemberContacts.cshtml" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
@@ -226,6 +231,7 @@
     <Content Include="Views\Units\RosterManagement.cshtml" />
     <Content Include="Views\Units\ImportRoster.cshtml" />
     <Content Include="Views\Units\ImportRosterResults.cshtml" />
+    <Content Include="Views\Members\ContactManagement.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
@@ -309,6 +315,6 @@
     </VisualStudio>
   </ProjectExtensions>
   <PropertyGroup>
-    <PreBuildEvent>type "$(ProjectDir)Scripts\jquery-1.5.1.min.js" "$(ProjectDir)Scripts\jquery-ui-1.8.11.js" "$(ProjectDir)Scripts\modernizr-1.7.min.js" "$(ProjectDir)Scripts\break.js" "$(ProjectDir)Scripts\jquery.tablesorter.js" "$(ProjectDir)Scripts\common.js"  &gt; "$(ProjectDir)Scripts\core.js"</PreBuildEvent>
+    <PreBuildEvent>type "$(ProjectDir)Scripts\jquery-1.7.1.min.js" "$(ProjectDir)Scripts\jquery-ui-1.8.11.js" "$(ProjectDir)Scripts\knockout-2.0.0.$(ConfigurationName).js" "$(ProjectDir)Scripts\knockout.mapping-latest.$(ConfigurationName).js" "$(ProjectDir)Scripts\modernizr-1.7.min.js" "$(ProjectDir)Scripts\break.js" "$(ProjectDir)Scripts\jquery.tablesorter.js" "$(ProjectDir)Scripts\common.js"  &gt; "$(ProjectDir)Scripts\core.js"</PreBuildEvent>
   </PropertyGroup>
 </Project>

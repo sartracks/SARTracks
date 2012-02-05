@@ -54,14 +54,27 @@ function parseCoordinate(coord) {
 
     return undefined;
 }
+
 function isDefined(variable) {
     return (typeof (window[variable]) == "undefined") ? false : true;
 }
 
+function colorTable(table) {
+    table.find('tbody tr').filter(':even').removeClass('odd');
+    table.find('tbody tr').filter(':odd').addClass('odd');
+}
+
 function updateSort(table, sortList) {
-    if (sortList == null) {
-        sortList = [];
+    if (table.find('tbody tr').length == 0) return;
+    if (sortList == null && table.length > 0 && table[0].config != null && (table[0].config.sortList.length != 0))
+    {
+        sortList = table[0].config.sortList
     }
+    if (sortList == null && table.data('sort') != null) {
+        sortList = table.data('sort');
+    }
+    if (sortList == null) { sortList = [] }
+
     table.trigger("update");
     table.trigger("sorton", [sortList]);
     table.trigger("applyWidgets");
@@ -69,10 +82,6 @@ function updateSort(table, sortList) {
 
 function formatDateTime(format, date, settings) {
     if (!date) { return "" }
-    // var dayNamesShort = (settings ? settings.dayNamesShort : null) || this._defaults.dayNamesShort;
-    // var dayNames = (settings ? settings.dayNames : null) || this._defaults.dayNames;
-    // var monthNamesShort = (settings ? settings.monthNamesShort : null) || this._defaults.monthNamesShort;
-    // var monthNames = (settings ? settings.monthNames : null) || this._defaults.monthNames;
     var lookAhead = function (match) {
         var matches = (iFormat + 1 < format.length && format.charAt(iFormat + 1) == match);
         if (matches) { iFormat++ } return matches
@@ -103,9 +112,7 @@ function formatDateTime(format, date, settings) {
                 switch (format.charAt(iFormat)) {
                     case "d": output += formatNumber("d", date.getDate(), 2); break;
                     case "D": output += formatName("D", date.getDay(), ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]); break;
-                    //    case "o": var doy = date.getDate(); for (var m = date.getMonth() - 1; m >= 0; m--) { doy += this._getDaysInMonth(date.getFullYear(), m) } output += formatNumber("o", doy, 3); break; 
                     case "m": output += formatNumber("m", date.getMonth() + 1, 2); break;
-                    //    case "M": output += formatName("M", date.getMonth(), monthNamesShort, monthNames); break; 
                     case "y": output += (lookAhead("y") ? date.getFullYear() : (date.getYear() % 100 < 10 ? "0" : "") + date.getYear() % 100); break;
                     case "@": output += date.getTime(); break;
                     case "'": if (lookAhead("'")) { output += "'" } else { literal = true } break;
@@ -141,38 +148,49 @@ function loadManagement(url, data, afterLoad) {
 
 function setupFormDialog(dialogDiv, height, width, buttonText, submitUrl, onSuccess) {
     var buttons = new Object();
-    buttons[buttonText] =  function () {
-                $('[data-val]').removeClass("ui-state-error");
-                var dialog = $(this);
-                global_showProgress();
-                $.ajax({ type: 'POST', url: submitUrl, data: $(this).find("form").serialize(), dataType: 'json',
-                    success: function (data) {
-                        global_hideProgress();
-                        if (data.Errors.length > 0) {
-                            alert('validation errors');
-                        }
-                        else {
-                            var doClose = true;
-                            if (onSuccess) doClose = onSuccess(data.Result);
-                            if (doClose) dialog.dialog("close");
-                        }
-                    },
-                    error: function () {
-                        global_hideProgress();
-                        alert('An unknown error occurred. You may want to try submitting again.');
-                    },
-                    statusCode: {
-                        403: function () {
-                            global_hideProgress();
-                            alert('not logged in. Please refresh');
-                        }
-                    }
-                });
-            };
+    dialogDiv.find("form").submit(function () {
+        dialogDiv.parent().find(".ui-dialog-buttonset button").first().click();
+      return false; });
 
-        buttons["Cancel"] = function () {
-                $(this).dialog("close");
-            };
+    // When changing a field, assume we're correcting any errors on the field
+      dialogDiv.find("input").change(function () { $(this).removeClass('input-validation-error'); dialogDiv.find("[data-valmsg-for='" + this.name + "']").addClass('field-validation-valid').removeClass('field-validation-error'); });
+
+    buttons[buttonText] = function () {
+        var dialog = $(this);
+        if (dialog.find('.field-validation-error').length > 0) { alert('Please fix errors'); return; }
+
+        global_showProgress();
+        $.ajax({ type: 'POST', url: submitUrl, data: $(this).find("form").serialize(), dataType: 'json',
+            success: function (data) {
+                global_hideProgress();
+                if (data.Errors.length > 0) {
+                    for (var i in data.Errors) {
+                          $('[data-valmsg-for="' + data.Errors[i].Property + '"]').html(data.Errors[i].Error).addClass('field-validation-error').removeClass('field-validation-valid');
+                          $('[name="' + data.Errors[i].Property + '"]').addClass('input-validation-error');
+                    }
+                }
+                else {
+                    var doClose = true;
+                    if (onSuccess) doClose = onSuccess(data.Result);
+                    if (doClose) dialog.dialog("close");
+                }
+            },
+            error: function () {
+                global_hideProgress();
+                alert('An unknown error occurred. You may want to try submitting again.');
+            },
+            statusCode: {
+                403: function () {
+                    global_hideProgress();
+                    alert('not logged in. Please refresh');
+                }
+            }
+        });
+    };
+
+    buttons["Cancel"] = function () {
+            $(this).dialog("close");
+        };
 
     dialogDiv.dialog({
         autoOpen: false,
@@ -183,5 +201,134 @@ function setupFormDialog(dialogDiv, height, width, buttonText, submitUrl, onSucc
         close: function () {
             $('[data-val]').val("").removeClass("ui-state-error");
         }
+    });
+}
+
+ko.bindingHandlers.triggerUpdate = {
+    update: function (element, valueAccessor) {
+        ko.utils.unwrapObservable(valueAccessor()); //need to just access the observable to create the subscription
+        colorTable($(element));
+    }
+}
+
+function setupFormDialog2(dialogDiv, height, width, buttonText, submitUrl, onSuccess) {
+    var buttons = new Object();
+    dialogDiv.find("form").submit(function () {
+        dialogDiv.parent().find(".ui-dialog-buttonset button").first().click();
+        return false;
+    });
+
+    buttons[buttonText] = function () {
+        var dialog = $(this);
+        var f = dialog.find('form');
+        f.find('.error').removeClass('error');
+        f.find('.validmsg').hide();
+
+        global_showProgress();
+        $.ajax({ type: 'POST', url: submitUrl, data: $(this).find("form").serialize(), dataType: 'json',
+            complete: function () { global_hideProgress(); },
+            success: function (data) {
+                global_hideProgress();
+
+                if (data.Errors.length > 0) {
+                    for (i in data.Errors) {
+                        var e = data.Errors[i];
+                        if (e.p == null && e.m != null) {
+                            f.find('[name="validateTips"]').addClass('error').html(e.m).show();
+                        }
+                        else if (e.m != null && e.m != null) {
+                            f.find('[validates="' + e.p + '"]').addClass('error').html(e.m).show();
+                            f.find('[name="' + e.p + '"]').addClass('error');
+                        }
+                    }
+                }
+                else {
+                    if (onSuccess != null) onSuccess(data.Result);
+                    dialog.dialog("close");
+                }
+            },
+            error: function (a, b, c) {
+                if (c == "Forbidden") { alert('not logged in. Please refresh the page'); return; }
+
+                alert('An unknown error occurred. You may want to try submitting again.' + a + ':' + b + ':' + c);
+            }
+        });
+    };
+
+    buttons["Cancel"] = function () {
+        $(this).dialog("close");
+    };
+
+    dialogDiv.dialog({
+        autoOpen: false,
+        height: height,
+        width: width,
+        modal: true,
+        buttons: buttons,
+        close: function () {
+        }
+    });
+}
+
+var formsSetup = false;
+function formsInit() {
+    if (formsSetup) return;
+
+    formsSetup = true;
+    $("#formsDelete").dialog({
+        autoOpen: false,
+        height: 180,
+        width: 450,
+        modal: true,
+        buttons: {
+            'Delete': function () {
+                $('.ui-dialog-buttonpane button').attr('disabled', 'true').addClass('ui-state-disabled');
+                var d = $(this);
+
+                var url = d[0].url;
+
+                $.ajax({ type: 'POST', url: d[0].url, data: { q: d[0].delId }, dataType: 'json',
+                    success: function (data) {
+                        if (data.Errors.length == 0) {
+                            d.dialog('close');
+                            if (d[0].onSuccess != undefined) d[0].onSuccess(d[0].delId);
+                        }
+                    },
+                    //error: handleDataActionError,
+                    complete: function (request, status) {
+                        $('.ui-dialog-buttonpane button').removeAttr('disabled').removeClass('ui-state-disabled');
+                    }
+                });
+            },
+            Cancel: function () {
+                $(this).dialog('close');
+            }
+        }
+    });
+}
+
+function doDeleteForm(title, url, id, msg, onSuccess) {
+    var del = $('#formsDelete');
+    del[0].onSuccess = onSuccess;
+    del[0].url = url;
+    del[0].delId = id;
+
+    $('#ui-dialog-title-formsDelete').html("Delete " + title);
+    $('#formsDeleteTitle').html(msg);
+    del.dialog('open');
+    del.dialog('option', 'position', 'center');
+}
+
+function wireEditDelete(objectType, url, loadMethod) {
+    $('body').on('click', '.Delete' + objectType, function (f) {
+        var t = $(f.currentTarget);
+
+        doDeleteForm(objectType, url, t.attr('delid'), t.attr('delmsg'), loadMethod);
+    });
+    $('body').on("click", ".Edit" + objectType, function (f) {
+        var j = ko.toJS(ko.dataFor(f.currentTarget));
+        var m = ko.mapping.fromJS(j);
+        ko.applyBindings(m, $('#' + objectType + 'Dialog')[0]);
+        $('#' + objectType + 'Dialog').dialog("open");
     });
 }

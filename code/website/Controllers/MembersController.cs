@@ -25,16 +25,20 @@ namespace SarTracks.Website.Controllers
     using SarTracks.Website.Models;
     using SarTracks.Website.ViewModels;
     using System.Data.Entity.Infrastructure;
+    using SarTracks.Website.Services;
 
     public class MembersController : ControllerBase
     {
+        public MembersController() : base() { }
+        public MembersController(AuthIdentityService perms, DataStoreFactory store) : base(perms, store) { }
+
         //
         // GET: /Members/
 
-        public ActionResult Index()
-        {
-            return View();
-        }
+        //public ActionResult Index()
+        //{
+        //    return View();
+        //}
 
         ///// <summary>
         ///// 
@@ -70,97 +74,143 @@ namespace SarTracks.Website.Controllers
         [HttpGet]
         public ActionResult Detail(Guid q)
         {
-            if (!Permissions.CanViewMember(q)) return GetLoginRedirect();
+            if (!Permissions.HasPermission(PermissionType.ViewMemberStandard, q)) return GetLoginRedirect();
 
             SarMember model;
             using (var ctx = GetRepository())
             {
                 model = ctx.Members.Single(f => f.Id == q);
-                if (!Permissions.IsInRole("Administrators"))
+                if (!Permissions.HasPermission(PermissionType.ViewMemberDetail, q))
                 {
                     MembersController.FilterPersonalInfo(new[] { model });
                 }
             }
 
+            ViewData["canEdit"] = Permissions.HasPermission(PermissionType.EditMemberContacts, q);
             return View(model);
         }
 
+        [HttpGet]
+        public ActionResult ContactManagement(Guid q)
+        {
+            SarMember member = null;
+            using (var ctx = GetRepository())
+            {
+                member = ctx.Members.Single(f => f.Id == q);
+            }
+            return PartialView(member);
+        }
+
+
         public static void FilterPersonalInfo(IEnumerable<SarMember> members)
-        {            
+        {
             foreach (var member in members)
             {
                 member.BirthDate = null;
             }
         }
 
-        #region Addresses
-        [HttpGet]
-        public ActionResult AddAddress(Guid q)
-        {
-            if (!Permissions.CanAdminOrganization(q)) return GetLoginRedirect();
-
-            MemberAddress model = new MemberAddress();
-            return PartialView("AddressForm", model);
-        }
-
-
-        [HttpGet]
-        public ActionResult EditAddress(Guid q, Guid e)
-        {
-            if (!Permissions.CanAdminOrganization(q)) return GetLoginRedirect();
-            MemberAddress model;
-            using (var ctx = GetRepository())
-            {
-                model = ctx.Members.Where(f => f.Id == q).SelectMany(f => f.Addresses).Single(f => f.Id == e);
-            }
-            return PartialView("AddressForm", model);
-        }
-
         [HttpPost]
-        public DataActionResult SaveAddress(Guid q, MemberAddress model)
+        public DataActionResult SubmitAddress(MemberAddress model)
         {
-            if (!Permissions.CanAdminOrganization(q)) return GetLoginError();
-
-            SubmitResult<MemberAddress> result = new SubmitResult<MemberAddress>();
-
+            if (!Permissions.HasPermission(PermissionType.EditMemberContacts, model.MemberId)) return GetLoginError();
+            List<SubmitError> errors = new List<SubmitError>();
             ModelState.Remove("Member");
+            ModelState.Remove("Id");
+
             if (ModelState.IsValid)
             {
-                using (var ctx = GetRepository())
+                using (var ctx = this.GetRepository())
                 {
-                    var oldModel = ctx.Members.Where(f => f.Id == q).SelectMany(f => f.Addresses).SingleOrDefault(f => f.Id == model.Id);
-                    SarMember member = ctx.Members.Single(f => f.Id == q);
-                    model.Member = member;
-                    model.MemberId = member.Id;
-
+                    var oldModel = ctx.Members.IncludePaths("Address.Member").Where(f => f.Id == model.MemberId).SelectMany(f => f.Addresses).SingleOrDefault(f => f.Id == model.Id);
                     if (oldModel == null)
                     {
-                        member.Addresses.Add(model);
+                        ctx.Members.Single(f => f.Id == model.MemberId).Addresses.Add(model);
                     }
                     else
                     {
                         oldModel.CopyFrom(model);
+                        if (oldModel.Member == null) oldModel.Member = ctx.Members.Single(f => f.Id == oldModel.MemberId);
                     }
-
-                    try
-                    {
-                        ctx.SaveChanges();
-                    }
-                    catch
-                    {
-                        // Set breakpoint
-                        throw;
-                    }
+                    ctx.SaveChanges();
                 }
             }
-            result.Result = model;
-            return Data(result);
+            else
+            {
+                ModelStateToSubmitErrors(errors);
+            }
+
+            return Data(new SubmitResult<MemberAddress> { Errors = errors.ToArray(), Result = model });
         }
+
+    //    #region Addresses
+    //    [HttpGet]
+    //    public ActionResult AddAddress(Guid q)
+    //    {
+    //        if (!Permissions.HasPermission(PermissionType.EditMemberContacts, q)) return GetLoginRedirect();
+
+    //        MemberAddress model = new MemberAddress();
+    //        return PartialView("AddressForm", model);
+    //    }
+
+
+    //    [HttpGet]
+    //    public ActionResult EditAddress(Guid q, Guid e)
+    //    {
+    //        if (!Permissions.HasPermission(PermissionType.EditMemberContacts, q)) return GetLoginRedirect();
+    //        MemberAddress model;
+    //        using (var ctx = GetRepository())
+    //        {
+    //            model = ctx.Members.Where(f => f.Id == q).SelectMany(f => f.Addresses).Single(f => f.Id == e);
+    //        }
+    //        return PartialView("AddressForm", model);
+    //    }
+
+    //    [HttpPost]
+    //    public DataActionResult SaveAddress(Guid q, MemberAddress model)
+    //    {
+    //        if (!Permissions.HasPermission(PermissionType.EditMemberContacts, q)) return GetLoginError();
+
+    //        SubmitResult<MemberAddress> result = new SubmitResult<MemberAddress>();
+
+    //        ModelState.Remove("Member");
+    //        if (ModelState.IsValid)
+    //        {
+    //            using (var ctx = GetRepository())
+    //            {
+    //                var oldModel = ctx.Members.Where(f => f.Id == q).SelectMany(f => f.Addresses).SingleOrDefault(f => f.Id == model.Id);
+    //                SarMember member = ctx.Members.Single(f => f.Id == q);
+    //                model.Member = member;
+    //                model.MemberId = member.Id;
+
+    //                if (oldModel == null)
+    //                {
+    //                    member.Addresses.Add(model);
+    //                }
+    //                else
+    //                {
+    //                    oldModel.CopyFrom(model);
+    //                }
+
+    //                try
+    //                {
+    //                    ctx.SaveChanges();
+    //                }
+    //                catch
+    //                {
+    //                    // Set breakpoint
+    //                    throw;
+    //                }
+    //            }
+    //        }
+    //        result.Result = model;
+    //        return Data(result);
+    //    }
 
         [HttpPost]
         public DataActionResult DeleteAddress(Guid q, Guid e)
         {
-            if (!Permissions.CanAdminOrganization(q)) return GetLoginError();
+            if (!Permissions.HasPermission(PermissionType.EditMemberContacts, q)) return GetLoginError();
 
             using (var ctx = GetRepository())
             {
@@ -177,7 +227,7 @@ namespace SarTracks.Website.Controllers
         [HttpPost]
         public DataActionResult GetAddresses(Guid q)
         {
-            if (!Permissions.CanViewOrganization(q)) return GetLoginError();
+            if (!Permissions.HasPermission(PermissionType.ViewMemberStandard, q)) return GetLoginError();
 
             MemberAddress[] model;
             using (var ctx = GetRepository())
@@ -189,83 +239,83 @@ namespace SarTracks.Website.Controllers
 
             return Data(model);
         }
-        #endregion
+    //    #endregion
 
-        #region Contact Info
-        [HttpGet]
-        public ActionResult AddContactInfo(Guid q)
-        {
-            if (!Permissions.CanAdminOrganization(q)) return GetLoginRedirect();
+    //    #region Contact Info
+    //    [HttpGet]
+    //    public ActionResult AddContactInfo(Guid q)
+    //    {
+    //        if (!Permissions.HasPermission(PermissionType.EditMemberContacts, q)) return GetLoginRedirect();
 
-            MemberContact model = new MemberContact();
-            return PartialView("ContactForm", model);
-        }
+    //        MemberContact model = new MemberContact();
+    //        return PartialView("ContactForm", model);
+    //    }
 
 
-        [HttpGet]
-        public ActionResult EditContactInfo(Guid q, Guid contact)
-        {
-            if (!Permissions.CanAdminOrganization(q)) return GetLoginRedirect();
-            MemberContact model;
-            using (var ctx = GetRepository())
-            {
-                model = ctx.Members.Where(f => f.Id == q).SelectMany(f => f.ContactInfo).Single(f => f.Id == contact);
-            }
-            return PartialView("ContactForm", model);
-        }
+    //    [HttpGet]
+    //    public ActionResult EditContactInfo(Guid q, Guid contact)
+    //    {
+    //        if (!Permissions.HasPermission(PermissionType.EditMemberContacts, q)) return GetLoginRedirect();
+    //        MemberContact model;
+    //        using (var ctx = GetRepository())
+    //        {
+    //            model = ctx.Members.Where(f => f.Id == q).SelectMany(f => f.ContactInfo).Single(f => f.Id == contact);
+    //        }
+    //        return PartialView("ContactForm", model);
+    //    }
+
+    //    [HttpPost]
+    //    public DataActionResult SaveContactInfo(Guid q, MemberContact model)
+    //    {
+    //        if (!Permissions.HasPermission(PermissionType.EditMemberContacts, q)) return GetLoginError();
+
+    //        SubmitResult<MemberContact> result = new SubmitResult<MemberContact>();
+
+    //        ModelState.Remove("Member");
+    //        if (ModelState.IsValid)
+    //        {
+    //            using (var ctx = GetRepository())
+    //            {
+    //                var oldModel = ctx.Members.Where(f => f.Id == q).SelectMany(f => f.ContactInfo).SingleOrDefault(f => f.Id == model.Id);
+    //                SarMember member = ctx.Members.Single(f => f.Id == q);
+    //                model.Member = member;
+    //                model.MemberId = member.Id;
+
+    //                if (oldModel == null)
+    //                {
+    //                    member.ContactInfo.Add(model);
+    //                }
+    //                else
+    //                {
+    //                    oldModel.CopyFrom(model);
+    //                }
+
+    //                try
+    //                {
+    //                    ctx.SaveChanges();
+    //                }
+    //                catch
+    //                {
+    //                    // Set breakpoint
+    //                    throw;
+    //                }
+    //            }
+    //        }
+    //        result.Result = model;
+    //        return Data(result);
+    //    }
 
         [HttpPost]
-        public DataActionResult SaveContactInfo(Guid q, MemberContact model)
+        public DataActionResult DeleteContact(Guid q)
         {
-            if (!Permissions.CanAdminOrganization(q)) return GetLoginError();
-
-            SubmitResult<MemberContact> result = new SubmitResult<MemberContact>();
-
-            ModelState.Remove("Member");
-            if (ModelState.IsValid)
-            {
-                using (var ctx = GetRepository())
-                {
-                    var oldModel = ctx.Members.Where(f => f.Id == q).SelectMany(f => f.ContactInfo).SingleOrDefault(f => f.Id == model.Id);
-                    SarMember member = ctx.Members.Single(f => f.Id == q);
-                    model.Member = member;
-                    model.MemberId = member.Id;
-
-                    if (oldModel == null)
-                    {
-                        member.ContactInfo.Add(model);
-                    }
-                    else
-                    {
-                        oldModel.CopyFrom(model);
-                    }
-
-                    try
-                    {
-                        ctx.SaveChanges();
-                    }
-                    catch
-                    {
-                        // Set breakpoint
-                        throw;
-                    }
-                }
-            }
-            result.Result = model;
-            return Data(result);
-        }
-
-        [HttpPost]
-        public DataActionResult DeleteContactInfo(Guid q, Guid contact)
-        {
-            if (!Permissions.CanAdminOrganization(q)) return GetLoginError();
-            
             using (var ctx = GetRepository())
             {
-                var model = ctx.Members.Where(f => f.Id == q).SelectMany(f => f.ContactInfo).Single(f => f.Id == contact);
+                var model = ctx.Members.SelectMany(f => f.ContactInfo).Single(f => f.Id == q);
+
+                if (!Permissions.HasPermission(PermissionType.EditMemberContacts, model.MemberId)) return GetLoginError();
 
                 ctx.Delete(model);
-                
+
                 ctx.SaveChanges();
             }
             return Data(new SubmitResult<bool> { Result = true });
@@ -275,7 +325,7 @@ namespace SarTracks.Website.Controllers
         [HttpPost]
         public DataActionResult GetContactInfo(Guid q)
         {
-            if (!Permissions.CanViewOrganization(q)) return GetLoginError();
+            if (!Permissions.HasPermission(PermissionType.ViewMemberStandard, q)) return GetLoginError();
 
             MemberContact[] model;
             using (var ctx = GetRepository())
@@ -287,11 +337,47 @@ namespace SarTracks.Website.Controllers
 
             return Data(model);
         }
-        #endregion
+
+        [HttpPost]
+        public DataActionResult SubmitContact(MemberContact model)
+        {
+            if (!Permissions.HasPermission(PermissionType.EditMemberContacts, model.MemberId)) return GetLoginError();
+            List<SubmitError> errors = new List<SubmitError>();
+            ModelState.Remove("Member");
+            ModelState.Remove("Id");
+
+            if (ModelState.IsValid)
+            {
+                using (var ctx = this.GetRepository())
+                {
+                    var oldModel = ctx.Members.IncludePaths("ContactInfo.Member").Where(f => f.Id == model.MemberId).SelectMany(f => f.ContactInfo).SingleOrDefault(f => f.Id == model.Id);
+                    if (oldModel == null)
+                    {
+                        ctx.Members.Single(f => f.Id == model.MemberId).ContactInfo.Add(model);
+                    }
+                    else
+                    {
+                        oldModel.CopyFrom(model);
+                        
+                        if (oldModel.Member == null) oldModel.Member = ctx.Members.Single(f => f.Id == oldModel.MemberId);
+                    }
+                    ctx.SaveChanges();
+                }
+            }
+            else
+            {
+                ModelStateToSubmitErrors(errors);
+            }
+            return Data(new SubmitResult<MemberContact> { Errors = errors.ToArray(), Result = model });
+        }
+
+    //    #endregion
 
         [HttpPost]
         public DataActionResult GetAllMemberships(Guid q)
         {
+            if (!Permissions.HasPermission(PermissionType.ViewMemberBasic, q)) return GetLoginError();
+
             UnitMembership[] model;
 
             using (var ctx = GetRepository())
@@ -315,16 +401,18 @@ namespace SarTracks.Website.Controllers
         [HttpPost]
         [Authorize]
         public DataActionResult GetDesignators(Guid q, DateTime? when)
-        {            
+        {
+            if (!Permissions.HasPermission(PermissionType.ViewMemberBasic, q)) return GetLoginError();
+
             when = when ?? DateTime.Now;
 
-            Dictionary<string, List<Guid>> designators = new Dictionary<string,List<Guid>>();
+            Dictionary<string, List<Guid>> designators = new Dictionary<string, List<Guid>>();
             Dictionary<Guid, string> lookup = new Dictionary<Guid, string>();
 
             using (var ctx = GetRepository())
             {
                 Organization[] orgs = ctx.Organizations.ToArray();
-                
+
                 List<UnitMembership> memberships = ctx.Members
                     .Where(f => f.Id == q)
                     .SelectMany(f => f.Memberships)
@@ -332,6 +420,10 @@ namespace SarTracks.Website.Controllers
 
                 int count;
                 int newCount = 0;
+
+                // Iterate through the current members.
+                // If the worker number is not blank, keep track of it in the list/tables
+                // If the number is blank, then retrieve it from the linked org and keep track of where it came from
 
                 do
                 {
@@ -341,21 +433,28 @@ namespace SarTracks.Website.Controllers
                     {
                         var membership = memberships[i];
 
-                        if (!string.IsNullOrWhiteSpace(membership.Designator))
+                        if (!string.IsNullOrWhiteSpace(membership.WorkerNumber))
                         {
-                            if (!designators.ContainsKey(membership.Designator))
+                            if (!designators.ContainsKey(membership.WorkerNumber))
                             {
-                                designators.Add(membership.Designator, new List<Guid>());
+                                designators.Add(membership.WorkerNumber, new List<Guid>());
                             }
 
-                            designators[membership.Designator].Add(membership.OrganizationId);
-                            lookup.Add(membership.OrganizationId, membership.Designator);
+                            designators[membership.WorkerNumber].Add(membership.OrganizationId);
+                            lookup.Add(membership.OrganizationId, membership.WorkerNumber);
                             memberships.RemoveAt(i);
                             continue;
                         }
                         else
                         {
-                            Guid? designatingUnit = orgs.Single(f => f.Id == membership.OrganizationId).DesignatorsFromId;
+                            // Inspect the links from other units and see if any are tagged as assigning this unit's worker numbers
+                            Guid? designatingUnit = membership.Organization.LinksFromOrgs
+                                .Where(f => (f.LinkType | OrgLinkType.WorkerNumbers) == OrgLinkType.WorkerNumbers)
+                                .Select(f => f.FromOrganization.Id)
+                                .SingleOrDefault();
+
+                            // If there is an organization that gives worker numbers, see if we've retrieved this member's
+                            // number for that organizaiton
                             if (designatingUnit.HasValue && lookup.ContainsKey(designatingUnit.Value))
                             {
                                 string designator = lookup[designatingUnit.Value];
@@ -365,7 +464,7 @@ namespace SarTracks.Website.Controllers
                                 continue;
                             }
                         }
-                        i++;  
+                        i++;
                     }
 
                     newCount = designators.SelectMany(f => f.Value).Count();

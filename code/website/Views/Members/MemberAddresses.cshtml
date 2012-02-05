@@ -18,86 +18,63 @@
 @model SarTracks.Website.Models.SarMember
 @using SarTracks.Website.Models
 
-@{ bool canEdit = true; }
-<table id="AddressTable" class="data-table" cellspacing="0">
-  <thead style="display:none;"><tr><th>Type</th><th>Address</th>@Html.Raw(canEdit ? "<th></th>" : "" )</tr></thead>
-  <tbody>
-  </tbody>
+@{ bool canEdit = (bool)ViewData["canEdit"]; }
+<table id="AddressTable" class="data-table" cellspacing="0" data-bind="triggerUpdate: rows">
+<tbody data-bind="template: { name: 'addressTableTmpl', foreach: rows }">
+</tbody>
 </table>
+
+<script type="text/html" id="addressTableTmpl">
+  <tr>
+    <td><strong data-bind="text: addressTypes[Type()]"></strong></td>
+    <td data-bind="text: Address.Street()+', '+Address.City()+', '+Address.State()+' '+Address.Zip()"></td>
+    @if (canEdit)
+    {
+      <td>
+        <img class="img-button EditAddress" src="@Url.Content("~/Content/images/edit.png")" />
+        <img class="img-button DeleteAddress" data-bind="attr: { delid: Id(), delmsg: Type() }" src="@Url.Content("~/Content/images/delete.png")" />
+      </td>
+    }
+  </tr>     
+</script>
 <span class="AddAddress ButtonLink">Add Address</span>
 
-<div id="AddressDialog" class="dialog" title="" style="display:none;"></div>
 <script type="text/javascript">
-    var addressTypes = ['@Html.Raw(string.Join("', '", Enum.GetNames(typeof(MemberAddressType))))'];
+  var addressTypes = ['@Html.Raw(string.Join("', '", Enum.GetNames(typeof(MemberAddressType))))'];
+  var addressList = null;
 
-    function loadAddresses() {
-        $('#AddressTable body').html('<tr><td>Loading...</td></tr>');
+  function loadAddresses()
+  {
+    $.ajax({type: 'POST', url: '@Url.Action("GetAddresses")', data: { q: '@Model.Id' }, dataType: 'json', 
+           success: function (data) {
+               var t = $('#AddressTable');
+               if (addressList == null) {
+                   addressList = ko.mapping.fromJS({ rows: data });
+                   ko.applyBindings(addressList, t[0]);
+               } else {
+                   ko.mapping.fromJS({ rows: data }, { 'rows': { 'key': function (data) { return ko.utils.unwrapObservable(data.Id); }}}, addressList);
+               }
+               colorTable(t);
+           }
+       });
+   }
 
-        $.ajax({ type: 'POST', url: '@Url.Action("GetAddresses")', data: { q: '@Model.Id' }, dataType: 'json',
-            success: function (data) {
-                var table = $('#AddressTable tbody').html('');
-                for (var i in data) {
-                    var row = data[i];
-
-                    var html =
-                    "<tr><td><strong>" + addressTypes[row.Type] + "</strong>" +
-                    '</td><td>' + row.Address.Street + ', ' + row.Address.City + ', ' + row.Address.State + ' ' + row.Address.Zip +
-                    "</td><td><img class=\"EditAddress\" e=\"" + row.Id + "\" src=\"@Url.Content("~/Content/images/edit.png")\" />" +
-                    "<img class=\"DeleteAddress\" e=\"" + row.Id + "\" src=\"@Url.Content("~/Content/images/delete.png")\" />" +
-                    "</td></tr>";
-
-                    table.append(html);
-                }
-                updateSort($('#AddressTable'));
-                global_hideProgress();
-            }
+   $(document).ready(function() {
+     @if (canEdit)
+     {
+       <text>
+       $(".AddAddress").click(function() {
+          loadManagement('@Url.Action("ContactManagement")', {q: '@Model.Id' }, function () {
+            addressModel = ko.mapping.fromJS({ Id: null, MemberId: '@Model.Id',Type: 1, Address: {Street: null, City: null, State: null, Zip: null }});
+            ko.applyBindings(addressModel, $('#AddressDialog')[0]);
+            $('#AddressDialog').dialog("open");
+          });
         });
-    }
 
-    $(document).ready(function () {
-        $('#AddressTable').tablesorter({ widgets: ['zebra'] });
-
-        $("#AddressDialog").dialog({
-            autoOpen: false, width: 400, height: 350, modal: true,
-            buttons: {
-                "Save": function () {
-                    global_showProgress();
-                    $.post("@(Url.Action("SaveAddress"))/@Model.Id",
-                        $("#AddressForm").serialize(),
-                        function (data) {
-                            // $TODO: Handle return value                           
-                            $("#AddressDialog").html('').dialog("close");
-                            loadAddresses();
-                        });
-                },
-                Cancel: function () { $(this).html('').dialog("close"); }
-            }
-        });
-        $(".DeleteAddress").live("click", function() {
-            var id = $(this).attr("e");
-            if (confirm("Delete this address?"))
-            {
-                $.post("@(Url.Action("DeleteAddress"))/@Model.Id", { e: id },
-                        function (data) {
-                            // $TODO: Handle return value                           
-                            loadAddresses();
-                        });
-            }
-        });
-        $(".EditAddress").live("click", function () {
-            var id = $(this).attr("e");
-            $(".dialog").html('');
-            $("#AddressDialog")
-                .dialog("option", "title", "Edit Address")
-                .load("@Url.Action("EditAddress")/@Model.Id?e=" + id, function () { $("#AddressDialog").dialog("open"); });
-        });
-        $(".AddAddress").click(function () {
-            $(".dialog").html('');
-            $("#AddressDialog")
-                .dialog("option", "title", "Add Address")
-                .load("@Url.Action("AddAddress")/@Model.Id", function () { $("#AddressDialog").dialog("open"); });
-        });
-        
-        loadAddresses();
-    });
+        wireEditDelete('Address', '@Url.Action("DeleteAddress")', loadAddresses);
+        </text>
+     }
+     loadAddresses();
+     loadManagement('@Url.Action("ContactManagement")', {q: '@Model.Id' }, function () { });
+   });
 </script>

@@ -9,10 +9,11 @@ Thumbs.db
 *.bak
 *.cache
 *.log
-bin/
+bin
 *.lib
 *.sbr
-obj/
+obj
+TestResults/
 
 *.classpath
 *.project

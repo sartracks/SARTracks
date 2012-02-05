@@ -17,86 +17,69 @@
  *@
 @model SarTracks.Website.Models.SarMember
 @using SarTracks.Website.Models
-
-@{ bool canEdit = true; }
-<table id="ContactTable" class="data-table" cellspacing="0">
-  <thead style="display:none;"><tr><th>Type</th><th>SubType</th><th>Value</th><th></th>@Html.Raw(canEdit ? "<th></th>" : "" )</tr></thead>
-  <tbody>
-  </tbody>
+@{ bool canEdit = (bool)ViewData["canEdit"]; }
+<table id="ContactTable" class="data-table" cellspacing="0" data-bind="triggerUpdate: rows">
+<tbody data-bind="template: { name: 'contactTableTmpl', foreach: rows }">
+</tbody>
 </table>
+<script type="text/html" id="contactTableTmpl">
+        <tr>
+            <td>
+                <strong data-bind="text: contactTypes[Type()]"></strong>
+            </td>
+            <td data-bind="text: SubType">
+            </td>
+            <td data-bind="text: Value">
+            </td>
+            @if (canEdit)
+            {
+                <td>
+                    <img class="img-button EditContact" src="@Url.Content("~/Content/images/edit.png")" />
+                    <img class="img-button DeleteContact" data-bind="attr: { delid: Id(), delmsg: ((SubType() == null) ? '' : (SubType() + ' ')) + contactTypes[Type()] + ': ' + Value() }" src="@Url.Content("~/Content/images/delete.png")" />
+                </td>
+            }
+        </tr>
+</script>
 <span class="AddContact ButtonLink">Add Contact Information</span>
 
-<div id="ContactDialog" class="dialog" title="" style="display:none;"></div>
 <script type="text/javascript">
-    var contactTypes = ['@Html.Raw(string.Join("', '", Enum.GetNames(typeof(ContactType))))'];
+   var contactTypes = ['@Html.Raw(string.Join("', '", Enum.GetNames(typeof(ContactType))))'];
+   var subTypes = { 0: ['Cell', 'Home', 'Work', 'Pager'], 2: ['HAM'] };
+   
+   var contactsList = null;
 
-    function loadContacts() {
-        $('#ContactTable body').html('<tr><td>Loading...</td></tr>');
+   function loadContacts()
+   {
+       $.ajax({ type: 'POST', url: '@Url.Action("GetContactInfo")', data: { q: '@Model.Id' }, dataType: 'json',
+           success: function (data) {
+               var t = $('#ContactTable');
+               if (contactsList == null) {
+                   contactsList = ko.mapping.fromJS({ rows: data });
+                   ko.applyBindings(contactsList, t[0]);
+               } else {
+                   ko.mapping.fromJS({ rows: data }, { 'rows': { 'key': function (data) { return ko.utils.unwrapObservable(data.Id); }}}, contactsList);
+               }
+               colorTable(t);
+           }
+       });
+   }
 
-        $.ajax({ type: 'POST', url: '@Url.Action("GetContactInfo")', data: { q: '@Model.Id' }, dataType: 'json',
-            success: function (data) {
-                var table = $('#ContactTable tbody').html('');
-                for (var i in data) {
-                    var row = data[i];
+   $(document).ready(function () {
+       @if (canEdit)
+       {
+           <text>
+           $(".AddContact").click(function () {
+               loadManagement('@Url.Action("ContactManagement")', { q: '@Model.Id' }, function () {
+                   contactModel = ko.mapping.fromJS({ Id: null, MemberId: '@Model.Id', Type: 0, SubType: 'Cell', Value: null });
+                   ko.applyBindings(contactModel, $('#ContactDialog')[0]);
+                   $('#ContactDialog').dialog("open");
+               });
+           });
 
-                    var html =
-                    "<tr><td><strong>" + contactTypes[row.Type] + "</strong>" +
-                    '</td><td>' + ifDefined(row.SubType) +
-                    "</td><td>" + row.Value +
-                    "</td><td><img class=\"EditContact\" contact=\"" + row.Id + "\" src=\"@Url.Content("~/Content/images/edit.png")\" />" +
-                    "<img class=\"DeleteContact\" contact=\"" + row.Id + "\" src=\"@Url.Content("~/Content/images/delete.png")\" />" +
-                    "</td></tr>";
-
-                    table.append(html);
-                }
-                updateSort($('#ContactTable'));
-            }
-        });
-    }
-
-    $(document).ready(function () {
-        $('#ContactTable').tablesorter({ widgets: ['zebra'] });
-
-        $("#ContactDialog").dialog({
-            autoOpen: false, width: 400, height: 330, modal: true,
-            buttons: {
-                "Save": function () {
-                    $.post("@(Url.Action("SaveContactInfo"))/@Model.Id",
-                        $("#ContactForm").serialize(),
-                        function (data) {
-                            // $TODO: Handle return value                           
-                            $("#ContactDialog").html('').dialog("close");
-                            loadContacts();
-                        });
-                },
-                Cancel: function () { $(this).html('').dialog("close"); }
-            }
-        });
-        $(".DeleteContact").live("click", function() {
-            var id = $(this).attr("contact");
-            if (confirm("Delete this contact?"))
-            {
-                $.post("@(Url.Action("DeleteContactInfo"))/@Model.Id", { contact: id },
-                        function (data) {
-                            // $TODO: Handle return value                           
-                            loadContacts();
-                        });
-            }
-        });
-        $(".EditContact").live("click", function () {
-            var id = $(this).attr("contact");
-            $(".dialog").html('');
-            $("#ContactDialog")
-                .dialog("option", "title", "Edit Contact Information")
-                .load("@Url.Action("EditContactInfo")/@Model.Id?contact=" + id, function () { $("#ContactDialog").dialog("open"); });
-        });
-        $(".AddContact").click(function () {
-            $(".dialog").html('');
-            $("#ContactDialog")
-                .dialog("option", "title", "Add Contact Information")
-                .load("@Url.Action("AddContactInfo")/@Model.Id", function () { $("#ContactDialog").dialog("open"); });
-        });
-        
-        loadContacts();
-    });
+            wireEditDelete('Contact', '@Url.Action("DeleteContact")', loadContacts);
+           </text>
+       }
+       loadContacts();
+       loadManagement('@Url.Action("ContactManagement")', {q: '@Model.Id' }, function () { });
+   });
 </script>
