@@ -44,7 +44,7 @@ namespace SarTracks.Website.Models
         public DateTime? Finish { get; set; }
         
         [DataMember]
-        public string Designator { get; set; }
+        public string WorkerNumber { get; set; }
         
         [Required]
         [DataMember]
@@ -59,7 +59,7 @@ namespace SarTracks.Website.Models
             this.Start = r.Start;
             this.Finish = r.Finish;
             this.Member = r.Member;
-            this.Designator = r.Designator;
+            this.WorkerNumber = r.WorkerNumber;
             this.Status = r.Status;
         }
     }

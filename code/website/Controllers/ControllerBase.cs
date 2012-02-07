@@ -28,57 +28,42 @@ namespace SarTracks.Website.Controllers
     using SarTracks.Website.ViewModels;
 
     public class ControllerBase : Controller
-    {        
-        private IPermissionsService _permissions = null;
-        protected IPermissionsService Permissions
-        {
-            get
-            {
-                if (this._permissions == null) this._permissions = PermissionsServiceCache.GetInstance(this.User.Identity.Name);
+    {
+        private static Dictionary<string, AuthIdentityService> permissionsCache = new Dictionary<string, AuthIdentityService>();
 
-                return this._permissions;
-            }
+        protected AuthIdentityService Permissions { get; private set; }
+        protected DataStoreFactory StoreFactory { get; private set; }
+
+        public ControllerBase()
+        {
+            this.StoreFactory = new DataStoreFactory();
         }
 
-
-        private MembershipUser account;
-        private bool triedAccount = false;
-        protected MembershipUser Account
+        public ControllerBase(AuthIdentityService permissions, DataStoreFactory storeFactory)
         {
-            get
-            {
-                if (!triedAccount)
-                {
-                    this.account = Membership.GetUser(User.Identity.Name);
-                }
-                return this.account;
-            }
+            this.Permissions = permissions;
+            this.StoreFactory = storeFactory;
         }
-
-        private UserMetadata userMetadata = null;
-        private bool triedMetadata = false;
-        protected UserMetadata AccountMetadata
-        {
-            get
-            {
-                if (!triedMetadata)
-                {
-                    this.userMetadata = (this.Account == null) ? new UserMetadata() : Account.GetMetadata();
-                }
-                return this.userMetadata;
-            }
-        }
-
 
         protected override void Initialize(System.Web.Routing.RequestContext requestContext)
         {
             base.Initialize(requestContext);
-      //      ((PermissionsService)this.Permissions).SetRequest(Request);
+            if (this.Permissions == null)
+            {
+                this.Permissions = AuthIdentityServiceCache.GetInstance(this.User, this.StoreFactory);
+            }
+            ViewData["IsAdmin"] = Permissions.HasPermission(PermissionType.SiteAdmin, null);
+            ViewData["UserName"] = Permissions.UserName;
+
+            if (Request != null && Request.QueryString["msgOk"] != null)
+            {
+                ViewData["success"] = new MvcHtmlString(Request.QueryString["msgOk"]);
+            }
         }
 
         protected IDataStoreService GetRepository()
         {
-            return DataStoreService.Create(Permissions.Username);
+            return this.StoreFactory.Create(Permissions.UserLogin);
         }
 
         protected DataActionResult GetLoginError()
@@ -113,31 +98,21 @@ namespace SarTracks.Website.Controllers
             return isDataContract ? (DataActionResult)(new XmlDataContractResult(model)) : new XmlDataResult(model);
         }
 
-        protected Dictionary<Guid, string> GetUsersDatabaseOrgs(Guid memberId, string username)
+        protected Dictionary<Guid, string> GetUsersDatabaseOrgs()
         {
             Dictionary<Guid, string> orgs = new Dictionary<Guid, string>();
 
             using (var ctx = GetRepository())
             {
-                if (memberId != Guid.Empty)
-                {
-                    DateTime now = DateTime.UtcNow;
-                    foreach (var org in ctx.Organizations.Where(f => f.Memberships.Any(g => g.Member.Id == memberId && g.Status.IsActive && (g.Finish == null || g.Finish > now) && g.Start <= now)).Distinct())
-                    {
-                        orgs.Add(org.Id, org.LongName);
-                    }
-                }
-
-                string[] roles = Permissions.GetRolesForUser(username, true);
-
                 foreach (var org in ctx.Organizations.Select(f => new NameIdPair { Id = f.Id, Name = f.LongName }))
                 {
-                    if (!orgs.ContainsKey(org.Id) && roles.Any(f => f.Equals(string.Format("org{0}.users", org.Id), StringComparison.OrdinalIgnoreCase)))
+                    if (Permissions.HasPermission(PermissionType.ViewOrganizationBasic, org.Id))
                     {
                         orgs.Add(org.Id, org.Name);
                     }
                 }
             }
+
             return orgs;
         }
 
@@ -155,10 +130,10 @@ namespace SarTracks.Website.Controllers
         }
 
         public void ModelStateToSubmitErrors(List<SubmitError> errors)
-        {            
+        {
             foreach (var prop in ModelState)
             {
-                
+
                 foreach (var err in prop.Value.Errors)
                 {
                     errors.Add(new SubmitError { Error = err.ErrorMessage, Property = prop.Key });

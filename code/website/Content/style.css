@@ -45,13 +45,19 @@ header
     padding: 6px 0 0;
 }
 
-#title {
-	font-size:1.7em;
+#title 
+{
 	width:60%;
 	float:left;
-	font-family:"trebuchet MS", verdana, sans-serif;
 	padding:5px 0 10px 15px;
+}
+
+#title a {
+	font-size:1.7em;
+	font-family:"trebuchet MS", verdana, sans-serif;
 	letter-spacing:.15em;
+	color: inherit;
+	text-decoration: none;
 	}
 
 #title img {
@@ -224,6 +230,11 @@ a img {
     -moz-border-radius: 4px;
 }
 
+.img-button
+{
+    cursor:pointer;
+}
+
 a.ButtonLink
 {
     color:Black;
@@ -244,6 +255,14 @@ h1,h2,h3,h4,h5,h6 {
     border:solid 2px #B57200; color:black; padding:.3em; margin:1em
 }
 
+.success-box
+{
+    border:solid 2px #008800; color:#008800; padding:.3em; margin:1em;
+}
+.error-box
+{
+    border:solid 2px red; color:red; padding:.3em; margin:1em
+}
 .validation-summary-errors
 {
     background:#ff8e8e;
@@ -300,4 +319,33 @@ table.data-table td{
     -moz-border-radius: 15px;
     border-radius: 15px;
     margin:0px 1em;
+}
+
+.ui-widget { font-size:1em; }
+.ui-timepicker-div .ui-widget-header { margin-bottom: 8px; }
+.ui-timepicker-div dl { text-align: left; }
+.ui-timepicker-div dl dt { height: 25px; margin-bottom: -25px; }
+.ui-timepicker-div dl dd { margin: 0 10px 10px 65px; }
+.ui-timepicker-div td { font-size: 90%; }
+.ui-tpicker-grid-label { background: none; border: none; margin: 0; padding: 0; }
+
+.editor-label { font-weight:bold; }
+.editor-field input[type="text"], 
+.editor-field input[type="password"], .editor-field textarea 
+{
+    background-color:#ffffbb;
+    width:12em;
+}
+
+/* Styles for validation helpers
+-----------------------------------------------------------*/
+input.error {
+    border: 1px solid #ff0000;
+    background-color: #ffeeee;
+}
+
+span.error, p.error
+{
+    font-weight: bold;
+    color: #ff0000;
 }

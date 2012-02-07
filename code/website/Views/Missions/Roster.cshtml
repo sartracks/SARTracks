@@ -1,0 +1,72 @@
+﻿@model SarTracks.Website.Models.Mission
+
+@{
+    ViewBag.Title = "Roster";
+}
+
+<h2>Roster</h2>
+<table id="RosterTable" class="data-table" cellspacing="0" data-bind="triggerUpdate: rows">
+<thead>
+<tr><th name="name">Name</th><th name="dem">DEM #</th><th name="unit">Unit</th>
+<th name="enroute">Enroute</th><th name="onscene">On Scene</th><th name="signedout">Signed Out</th><th name="cleared">Cleared</th>
+<th name="hours">Total<br />Hours</th><th name="hoursOn">On Scene<br />Hours</th><th name="miles">Miles</th></tr>
+</thead>
+<tbody data-bind="template: { name: 'rosterTableTmpl', foreach: rows }">
+</tbody>
+<tfoot></tfoot>
+</table>
+<script type="text/html" id="rosterTableTmpl">
+<tr data-bind="attr: {name: 'r' + EffectiveMemberId() }">
+  <td data-bind="html: MemberName"></td>
+  <td data-bind="text: MemberNumber" class="r"></td>
+  <td data-bind="text: UnitName"></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td data-bind="text: TotalHours().toFixed(1)" class="r"></td>
+  <td data-bind="text: OnSceneHours().toFixed(1)" class="r"></td>
+  <td data-bind="text: Miles" class="r"></td>
+</tr>
+</script>
+
+
+<script type="text/javascript">
+    var roster = null;
+
+    function loadRoster() {
+        $.ajax({ type: 'POST', url: '@Url.Action("GetRoster")', data: { q: '@Model.Id' }, dataType: 'json',
+            success: function (data) {
+                var t = $('#RosterTable');
+                if (roster == null) {
+                    roster = ko.mapping.fromJS({ rows: data });
+                    ko.applyBindings(roster, t[0]);
+                } else {
+                    ko.mapping.fromJS({ rows: data }, { 'rows': { 'key': function (data) { return ko.utils.unwrapObservable(data.Id); } } }, roster);
+                }
+                colorTable(t);
+            }
+        });
+    }
+
+    function loadTimeline() {
+        $.ajax({ type: 'POST', url: '@Url.Action("GetTimeline")', data: { q: '@Model.Id' }, dataType: 'json',
+            success: function (data) {
+                var t = $('#RosterTable');
+                var lastId = '';
+                var row = null;
+                for (i in data) {
+                    if (data[i].MemberId != lastId) {
+                        lastId = data[i].MemberId;
+                        row = t.find("tr[@" + "name='r" + lastId + "']");
+                    }
+                }
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        loadRoster();
+    });
+
+</script>

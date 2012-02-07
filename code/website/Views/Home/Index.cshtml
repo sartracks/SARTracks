@@ -52,25 +52,37 @@ contact your team's database manager or @Html.ActionLink("create a new team", "C
     <select id="myUnit">
     @foreach (var unit in Model.MyUnits)
     {
-    <option value="@unit.Id">@unit.Name</option>
+    <option value="@unit.Id" perms="@unit.Permissions">@unit.Name</option>
     }
     </select>}</h3>
 
-    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Unit Roster", Href = Url.Action("Roster", "Units")+"?q=", Enabled = Model.UnitRoster, ImageName = "phone_book", ImageAlt = "phone book", Classes = "teamLink" });}
-    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Unit Training", Href = Url.Action("Training", "Units")+"?q=", Enabled = Model.UnitTraining, ImageName = "easel", ImageAlt = "Easel", Classes = "teamLink" });}
-    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Unit Missions", Href = Url.Action("Missions", "Units")+"?q=", Enabled = Model.UnitMissions, ImageName = "mission", ImageAlt = "Mission Notebook", Classes = "teamLink" });}
+    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Unit Roster", Href = Url.Action("Roster", "Units")+"?q=", Enabled = true, DivClass = "hidden unitpick", ImageName = "phone_book", ImageAlt = "phone book", Classes = "teamLink" });}
+    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Unit Roster", Href = Url.Action("Roster", "Units")+"?q=", Enabled = false, DivClass = "unitpick", ImageName = "phone_book", ImageAlt = "phone book", Classes = "teamLink" });}
+    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Unit Training", Href = Url.Action("Training", "Units")+"?q=", Enabled = true, DivClass = "hidden unitpick", ImageName = "easel", ImageAlt = "Easel", Classes = "teamLink" });}
+    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Unit Training", Href = Url.Action("Training", "Units") + "?q=", Enabled = false, DivClass = "unitpick", ImageName = "easel", ImageAlt = "Easel", Classes = "teamLink" });}
+    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Unit Missions", Href = Url.Action("Missions", "Units") + "?q=", Enabled = true, DivClass = "hidden unitpick", ImageName = "mission", ImageAlt = "Mission Notebook", Classes = "teamLink" });}
+    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Unit Missions", Href = Url.Action("Missions", "Units") + "?q=", Enabled = false, DivClass = "unitpick", ImageName = "mission", ImageAlt = "Mission Notebook", Classes = "teamLink" });}
+    @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Unit Settings", Href = Url.Action("Settings", "Units") + "?q=", Enabled = true, DivClass = "hidden unitpick", ImageName = "admin", ImageAlt = "Unit Settings", Classes = "teamLink" });}
 </div>
 
 <div>
     <h3>SAR Community:</h3>
     @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Mission Reports", Href = Url.Action("List", "Missions"), Enabled = Model.PublicReports, ImageName = "mission", ImageAlt = "Mission Notebook" });}
     @{Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Mapping", Href = Url.Action("Index", "Map"), Enabled = Model.PublicMapping, ImageName = "globe", ImageAlt = "globe" });}
+    @if ((bool?)ViewData["IsAdmin"] == true) { Html.RenderPartial("NavButton", new NavButtonViewModel { Text = "Admin Tools", Href = Url.Action("Index", "Admin"), Enabled = true, ImageName = "admin", ImageAlt = "Admin Tools" }); }
 </div>
 </div>
 <script type="text/javascript">
+    function toggleUnits(perms) {
+        $(".unitpick").each(function (idx) {
+            $(this).toggle(perms[Math.floor(idx / 2)] == ((idx % 2) ? ' ' : '*'));
+        });
+    }
     $(document).ready(function () {
+        toggleUnits('         ');
         $("#myUnit").change(function () {
             var unitId = this.value;
+            toggleUnits($(this.options[this.selectedIndex]).attr("perms"));
             $(".teamLink").each(function () {
                 this.href = this.href.substring(0, this.href.indexOf("?q=") + 3) + unitId;
             });

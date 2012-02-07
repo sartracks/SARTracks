@@ -46,9 +46,11 @@
     <Reference Include="nunit.framework, Version=2.5.10.11092, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data.Entity" />
     <Reference Include="System.Web" />
+    <Reference Include="System.Web.ApplicationServices" />
     <Reference Include="System.Web.Mvc, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\Program Files (x86)\Microsoft ASP.NET\ASP.NET MVC 3\Assemblies\System.Web.Mvc.dll</HintPath>
@@ -61,13 +63,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ContextMocks.cs" />
+    <Compile Include="Controllers\AccountsControllerTests.cs" />
+    <Compile Include="Controllers\HomeControllerTests.cs" />
     <Compile Include="Controllers\MembersControllerTests.cs" />
     <Compile Include="Controllers\OrganizationsControllerTests.cs" />
     <Compile Include="DevWebsiteDataInitializer.cs" />
     <Compile Include="InMemoryDbSet.cs" />
-    <Compile Include="Model\Organization.cs" />
+    <Compile Include="Model\RoleTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\AuthIdentityTests.cs" />
     <Compile Include="TestAdapter.cs" />
+    <Compile Include="TestAuthIdentityService.cs" />
     <Compile Include="TestStore.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -75,6 +81,9 @@
       <Project>{BDE78313-4C37-4FEE-B189-5AF127F47576}</Project>
       <Name>website</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

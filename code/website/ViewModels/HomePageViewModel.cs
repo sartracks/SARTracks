@@ -31,12 +31,16 @@ namespace SarTracks.Website.ViewModels
         public bool MyDetails { get; set; }
         public bool MyTraining { get; set; }
         public bool MyMissions { get; set; }
-        public bool UnitRoster { get; set; }
-        public bool UnitTraining { get; set; }
-        public bool UnitMissions { get; set; }
         public bool PublicMapping { get; set; }
         public bool PublicReports { get; set; }
 
-        public NameIdPair[] MyUnits { get; set; }
+        public HomePageUnitViewModel[] MyUnits { get; set; }
+    }
+
+    public class HomePageUnitViewModel
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string Permissions { get; set; }
     }
 }

@@ -43,12 +43,13 @@ namespace SarTracks.Website.Models
         public int Priority { get; set; }
 
         [DataMember]
+        [Required]
         public string Value { get; set; }
 
         public void CopyFrom(MemberContact other)
         {
             this.Member = other.Member;
-            this.MemberId = other.Member.Id;
+            this.MemberId = (other.Member == null) ? other.MemberId : other.Member.Id;
             this.Type = other.Type;
             this.SubType = other.SubType;
             this.Priority = other.Priority;

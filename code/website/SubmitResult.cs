@@ -42,10 +42,10 @@ namespace SarTracks.Website
     [DataContract]
     public class SubmitError
     {
-        [DataMember]
+        [DataMember(Name="p")]
         public string Property { get; set; }
 
-        [DataMember]
+        [DataMember(Name="m")]
         public string Error { get; set; }
 
         [DataMember]

@@ -1,0 +1,30 @@
+﻿@{
+    ViewBag.Title = "MyRoles";
+}
+
+<h2>Security Roles For @ViewData["UserName"]</h2>
+<ul id="roleList">
+
+</ul>
+
+<script type="text/javascript">
+ function load() {
+        $('#roleList').html('<li>Loading...</li>');
+
+        $.ajax({ type: 'POST', url: '@Url.Action("GetMyRoles")', data: null, dataType: 'json', contentType: 'application/json',
+            success: function (data) {
+                var table = $('#roleList').html((data.length == 0) ? '<li>No roles</li>' : '');
+                for (var i in data) {
+                    var row = data[i];
+                    var html =
+                    "<li>" + row + "</li>";
+                    table.append(html);
+                }
+            }
+        });
+    }
+
+$(document).ready(function () {        
+        load();
+    });
+</script>

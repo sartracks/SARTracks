@@ -21,11 +21,13 @@ namespace SarTracks.Tests.Website
     using System.Web.Mvc;
     using System.Web.Routing;
     using Moq;
+    using System.Security.Principal;
 
     public class ContextMocks
     {
         public Moq.Mock<HttpContextBase> HttpContext { get; set; }
         public Moq.Mock<HttpRequestBase> Request { get; set; }
+        public Moq.Mock<IPrincipal> User { get; set; }
         public RouteData RouteData { get; set; }
 
         public ContextMocks(Controller controller)
@@ -33,7 +35,10 @@ namespace SarTracks.Tests.Website
             //define context objects
             HttpContext = new Moq.Mock<HttpContextBase>();
             Request = new Mock<HttpRequestBase>();
+            User = new Mock<IPrincipal>();
+
             HttpContext.Setup(x => x.Request).Returns(Request.Object);
+            HttpContext.Setup(x => x.User).Returns(User.Object);
             //you would setup Response, Session, etc similarly with either mocks or fakes
 
             //apply context to controller

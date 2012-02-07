@@ -16,11 +16,12 @@
  *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
  *@
 @model SarTracks.Website.Models.Organization
+@using SarTracks.Website.Controllers
 
 @{
     ViewBag.Title = "Roster";
     ViewBag.Heading = @Model.Name + " Member Roster";
-    bool canAdd = (bool?)ViewData["canAddUser"] ?? false;
+    bool canAdd = (bool?)ViewData[UnitsController.VIEWDATA_CANADDUSER] ?? false;
 }
 
 @if (canAdd)
@@ -33,48 +34,51 @@
   <thead>
     <tr><th>Last Name</th><th>First Name</th><th>Designator</th><th>E-Mail</th><th>Primary Phone</th><th>Status</th></tr>
   </thead>
-  <tbody>
+  <tbody data-bind="foreach: { data: members, afterRender: function() { updateSort($('#table')); }}">
+    <tr>
+        <td><a data-bind="attr: { href: '@Url.Action("Detail", "Members")/' + Id }, text: LastName"></a></td>
+        <td><a data-bind="attr: { href: '@Url.Action("Detail", "Members")/' + Id }, text: FirstName"></a></td>
+        <td data-bind="text: Designator"></td>
+        <td data-bind="text: Email"></td>
+        <td data-bind="text: Phone"></td>
+        <td data-bind="text: Status"></td>
+    </tr>
   </tbody>
   <tfoot>
   </tfoot>
 </table>
+
+<script type="text/html" id="row-template">
+
+</script>
+
 <script type="text/javascript">
-    function load() {
-        $('#table body').html('<tr><td colspan="6" style="text-align:center;">Loading...</td></tr>');
-
-        $.ajax({ type: 'POST', url: '@Url.Action("GetRosterList")', data: { q: '@Model.Id' }, dataType: 'json',
-            success: function (data) {
-                var table = $('#table tbody').html('');
-                for (var i in data) {
-                    var row = data[i];
-
-                    var html =
-                    '<tr><td><a href="@Url.Action("Detail", "Members")/' + row.Id + '">' + row.LastName + '</a>' +
-                    '<td><a href="@Url.Action("Detail", "Members")/' + row.Id + '">' + row.FirstName + '</a>' +
-                    '</td><td>' + ifDefined(row.Designator) +
-                    '</td><td>' + ifDefined(row.Email) +
-                    '</td><td>' + ifDefined(row.Phone) +
-                    '</td><td>' + ifDefined(row.Status) +
-                    '</td></tr>';
-
-                    table.append(html);
-                }
-                if (data.length > 0) updateSort($('#table'));
-            }
-        });
+    function RosterModel(rows) {
+        var self = this;
+        self.members = ko.observableArray(rows);
     }
 
     $(document).ready(function () {
-        $('#table').tablesorter({ widgets: ['zebra'] });
+        global_showProgress();
+        $('#table').tablesorter({ widgets: ['zebra'], sortList: [[0,0],[1,0]]});
 
         $(".AddMember").click(function () {
             loadManagement('@Url.Action("RosterManagement")', { q: '@Model.Id' }, function () {
-                $('#MembershipDialog [name="Start"]').val(formatDateTime('yy-mm-dd', new Date()));
-              //  $('#MembershipDialog [name="Member.Gender"]').val("Male");
+                var newMembership = new MembershipModel();
+                newMembership.OrganizationId('@Model.Id');
+                ko.applyBindings(newMembership, $("#MembershipDialog")[0]);
                 $("#MembershipDialog").dialog("open");
             });
         });
 
-        load();
+        $.ajax({ type: 'POST', url: '@Url.Action("GetRosterList")', data: { q: '@Model.Id' }, dataType: 'json',
+            success: function (data) {
+                rosterModel = new RosterModel(data);
+                ko.applyBindings(rosterModel, document.getElementById('table'));
+            },
+            complete: function () {
+                global_hideProgress();
+            }
+        });
     });
 </script>

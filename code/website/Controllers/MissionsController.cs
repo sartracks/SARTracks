@@ -19,17 +19,77 @@ namespace SarTracks.Website.Controllers
 {
     using System;
     using System.Linq;
+    using System.Web.Mvc;
     using SarTracks.Website.Models;
     using SarTracks.Website.Services;
+    using System.Collections.Generic;
 
-    public class MissionsController : SarEventController<Mission, MissionAttendance>
+    public class MissionsController : SarEventController<Mission, MissionAttendance, MissionTimelineEntry>
     {
-        //
-        // GET: /Missions/
+//        //
+//        // GET: /Missions/
 
         protected override IQueryable<Mission> GetEventSummaries(IDataStoreService context)
         {
             return context.Missions;
+        }
+
+        protected override IQueryable<Mission> ApplyFilter(IQueryable<Mission> list, EventFilter filter)
+        {
+            list = base.ApplyFilter(list, filter);
+            if (filter.Units != null && filter.Units.Length > 0)
+            {
+                list = list.Where(f => f.RespondingUnits.Any(g => filter.Units.Contains(g.Id)));
+            }
+            return list;
+        }
+
+        protected override bool UserCanAdd(EventFilter currentFilter)
+        {
+            bool hasPermission = false;
+
+            if (currentFilter != null && currentFilter.Units != null)
+            {
+                hasPermission = currentFilter.Units.Any(f => Permissions.HasPermission(PermissionType.AddUnitMission, f));
+            }
+
+            return hasPermission;
+        }
+
+        [HttpGet]
+        public ActionResult Roster(Guid q)
+        {
+            Mission model = null;
+            using (var context = GetRepository())
+            {
+                model = context.Missions.Single(f => f.Id == q);
+            }
+            return View(model);
+        }
+
+        [HttpPost]
+        public DataActionResult GetRoster(Guid q)
+        {
+            IEnumerable<MissionAttendance> model;
+            using (var context = GetRepository())
+            {
+                model = context.Missions.IncludePaths("Roster.Member", "Roster.Unit").Single(f => f.Id == q)
+                    .Roster.OrderBy(f => f.UnitName).ThenBy(f => f.MemberName).ToArray();
+            }
+
+            return Data(model);
+        }
+
+        [HttpPost]
+        public DataActionResult GetTimeline(Guid q)
+        {
+            IEnumerable<MissionTimelineEntry> model;
+            using (var context = GetRepository())
+            {
+                model = context.Missions.Single(f => f.Id == q)
+                    .Timeline.OrderBy(f => f.Attendance.EffectiveMemberId).ThenBy(f => f.Time).ToArray();
+            }
+            return Data(model);
         }
     }
 }

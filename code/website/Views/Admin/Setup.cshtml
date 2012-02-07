@@ -15,6 +15,7 @@
  *  You should have received a copy of the GNU Affero General Public License
  *  along with SARTracks.  If not, see <http://www.gnu.org/licenses/>.
  *@
+@using SarTracks.Website.Controllers;
 @{
     ViewBag.Title = "Setup";
 }
@@ -24,8 +25,8 @@
 <ul>
 @if ((bool?)ViewData["adminGroupCreated"] == true) { <li>Created group &quot;Administrators&quot;</li> }
 
-@if (ViewData["adminPassword"] != null)
-{ <li>&quot;admin&quot; password set to &quot;@ViewData["adminPassword"]&quot;</li> }
+@if (ViewData[AdminController.VIEWDATA_ADMINPASSWORD] != null)
+{ <li>&quot;admin&quot; password set to &quot;@ViewData[AdminController.VIEWDATA_ADMINPASSWORD]&quot;</li> }
 
 @if ((bool?)ViewData["adminInGroup"] == true) { <li>Added &quot;admin&quot; to Administrators group</li> }
 

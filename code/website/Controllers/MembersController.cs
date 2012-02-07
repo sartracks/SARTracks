@@ -31,46 +31,7 @@ namespace SarTracks.Website.Controllers
     {
         public MembersController() : base() { }
         public MembersController(AuthIdentityService perms, DataStoreFactory store) : base(perms, store) { }
-
-        //
-        // GET: /Members/
-
-        //public ActionResult Index()
-        //{
-        //    return View();
-        //}
-
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        ///// <param name="q">Org ID</param>
-        ///// <returns></returns>
-        //[HttpGet]
-        //public ActionResult AddUnitMember(Guid q)
-        //{
-        //    var orgs = GetUsersDatabaseOrgs(this.AccountMetadata.LinkedMember, this.Account.UserName);
-        //    if (!orgs.Any(f => f.Key == q)) return GetLoginRedirect();
-
-        //    NewUnitMemberViewModel model = new NewUnitMemberViewModel
-        //    {
-        //        Member = new SarMember(),
-        //        Membership = new UnitMembership { Status = new UnitStatusType() }
-        //    };
-
-        //    using (var ctx = GetRepository())
-        //    {
-        //       var org = ctx.Organizations.IncludePaths("UnitStatusTypes").Single(f => f.Id == q);
-        //       model.Unit = org;
-        //       model.Membership.Organization = org;
-        //       model.Membership.OrganizationId = org.Id;
-        //       model.Membership.Member = model.Member;
-        //    }
-
-        //    return PartialView("NewUnitMemberForm", model);
-        //}
-
-
-
+        
         [HttpGet]
         public ActionResult Detail(Guid q)
         {
@@ -143,70 +104,6 @@ namespace SarTracks.Website.Controllers
             return Data(new SubmitResult<MemberAddress> { Errors = errors.ToArray(), Result = model });
         }
 
-    //    #region Addresses
-    //    [HttpGet]
-    //    public ActionResult AddAddress(Guid q)
-    //    {
-    //        if (!Permissions.HasPermission(PermissionType.EditMemberContacts, q)) return GetLoginRedirect();
-
-    //        MemberAddress model = new MemberAddress();
-    //        return PartialView("AddressForm", model);
-    //    }
-
-
-    //    [HttpGet]
-    //    public ActionResult EditAddress(Guid q, Guid e)
-    //    {
-    //        if (!Permissions.HasPermission(PermissionType.EditMemberContacts, q)) return GetLoginRedirect();
-    //        MemberAddress model;
-    //        using (var ctx = GetRepository())
-    //        {
-    //            model = ctx.Members.Where(f => f.Id == q).SelectMany(f => f.Addresses).Single(f => f.Id == e);
-    //        }
-    //        return PartialView("AddressForm", model);
-    //    }
-
-    //    [HttpPost]
-    //    public DataActionResult SaveAddress(Guid q, MemberAddress model)
-    //    {
-    //        if (!Permissions.HasPermission(PermissionType.EditMemberContacts, q)) return GetLoginError();
-
-    //        SubmitResult<MemberAddress> result = new SubmitResult<MemberAddress>();
-
-    //        ModelState.Remove("Member");
-    //        if (ModelState.IsValid)
-    //        {
-    //            using (var ctx = GetRepository())
-    //            {
-    //                var oldModel = ctx.Members.Where(f => f.Id == q).SelectMany(f => f.Addresses).SingleOrDefault(f => f.Id == model.Id);
-    //                SarMember member = ctx.Members.Single(f => f.Id == q);
-    //                model.Member = member;
-    //                model.MemberId = member.Id;
-
-    //                if (oldModel == null)
-    //                {
-    //                    member.Addresses.Add(model);
-    //                }
-    //                else
-    //                {
-    //                    oldModel.CopyFrom(model);
-    //                }
-
-    //                try
-    //                {
-    //                    ctx.SaveChanges();
-    //                }
-    //                catch
-    //                {
-    //                    // Set breakpoint
-    //                    throw;
-    //                }
-    //            }
-    //        }
-    //        result.Result = model;
-    //        return Data(result);
-    //    }
-
         [HttpPost]
         public DataActionResult DeleteAddress(Guid q, Guid e)
         {
@@ -239,71 +136,6 @@ namespace SarTracks.Website.Controllers
 
             return Data(model);
         }
-    //    #endregion
-
-    //    #region Contact Info
-    //    [HttpGet]
-    //    public ActionResult AddContactInfo(Guid q)
-    //    {
-    //        if (!Permissions.HasPermission(PermissionType.EditMemberContacts, q)) return GetLoginRedirect();
-
-    //        MemberContact model = new MemberContact();
-    //        return PartialView("ContactForm", model);
-    //    }
-
-
-    //    [HttpGet]
-    //    public ActionResult EditContactInfo(Guid q, Guid contact)
-    //    {
-    //        if (!Permissions.HasPermission(PermissionType.EditMemberContacts, q)) return GetLoginRedirect();
-    //        MemberContact model;
-    //        using (var ctx = GetRepository())
-    //        {
-    //            model = ctx.Members.Where(f => f.Id == q).SelectMany(f => f.ContactInfo).Single(f => f.Id == contact);
-    //        }
-    //        return PartialView("ContactForm", model);
-    //    }
-
-    //    [HttpPost]
-    //    public DataActionResult SaveContactInfo(Guid q, MemberContact model)
-    //    {
-    //        if (!Permissions.HasPermission(PermissionType.EditMemberContacts, q)) return GetLoginError();
-
-    //        SubmitResult<MemberContact> result = new SubmitResult<MemberContact>();
-
-    //        ModelState.Remove("Member");
-    //        if (ModelState.IsValid)
-    //        {
-    //            using (var ctx = GetRepository())
-    //            {
-    //                var oldModel = ctx.Members.Where(f => f.Id == q).SelectMany(f => f.ContactInfo).SingleOrDefault(f => f.Id == model.Id);
-    //                SarMember member = ctx.Members.Single(f => f.Id == q);
-    //                model.Member = member;
-    //                model.MemberId = member.Id;
-
-    //                if (oldModel == null)
-    //                {
-    //                    member.ContactInfo.Add(model);
-    //                }
-    //                else
-    //                {
-    //                    oldModel.CopyFrom(model);
-    //                }
-
-    //                try
-    //                {
-    //                    ctx.SaveChanges();
-    //                }
-    //                catch
-    //                {
-    //                    // Set breakpoint
-    //                    throw;
-    //                }
-    //            }
-    //        }
-    //        result.Result = model;
-    //        return Data(result);
-    //    }
 
         [HttpPost]
         public DataActionResult DeleteContact(Guid q)
@@ -370,8 +202,6 @@ namespace SarTracks.Website.Controllers
             }
             return Data(new SubmitResult<MemberContact> { Errors = errors.ToArray(), Result = model });
         }
-
-    //    #endregion
 
         [HttpPost]
         public DataActionResult GetAllMemberships(Guid q)

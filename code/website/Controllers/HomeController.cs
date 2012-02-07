@@ -24,38 +24,50 @@ namespace SarTracks.Website.Controllers
     using System.Web.Mvc;
     using SarTracks.Website.Models;
     using SarTracks.Website.ViewModels;
+    using SarTracks.Website.Services;
 
     public class HomeController : ControllerBase
     {
+        public HomeController() : base() { }
+        public HomeController(AuthIdentityService perms, DataStoreFactory factory) : base(perms, factory) { }
+
         public ActionResult Index()
         {
-            bool auth = User.Identity.IsAuthenticated;
-            bool hasAccount = this.Account != null;
-
-            bool hasMember = this.AccountMetadata.LinkedMember != Guid.Empty;
-            Dictionary<Guid, string> orgs = this.GetUsersDatabaseOrgs(this.AccountMetadata.LinkedMember, Permissions.Username);
-            bool hasGroups = orgs.Count > 0;
+            Dictionary<Guid, string> orgs = this.GetUsersDatabaseOrgs();
+            bool auth = Permissions.IsAuthenticated;
+            bool hasAccount = Permissions.IsUser;
+            bool hasMember = Permissions.User != null && Permissions.User.MemberId != null;
 
             HomePageViewModel model = new HomePageViewModel
             {
                 LoggedIn = auth,
                 HasAccount = hasAccount,
-                LinkedMember = this.AccountMetadata.LinkedMember,
+                LinkedMember = (Permissions.User == null || Permissions.User.MemberId == null) ? Guid.Empty : Permissions.User.MemberId.Value,
                 MyDetails = hasMember,
                 MyTraining = hasMember,
                 MyMissions = hasMember,
-                UnitRoster = hasGroups,
-                UnitTraining = hasGroups,
-                UnitMissions = hasGroups,
                 PublicMapping = true,
                 PublicReports = true,
-                MyUnits = orgs.Select(f => new NameIdPair { Id = f.Key, Name = f.Value }).ToArray()
+                MyUnits = orgs.Select(f => new HomePageUnitViewModel {
+                    Id = f.Key, 
+                    Name = f.Value,
+                    Permissions = string.Format("{0}{1}{2}{3}",
+                        Permissions.HasPermission(PermissionType.ViewOrganizationBasic, f.Key) ? "*" : " ",
+                        Permissions.HasPermission(PermissionType.ViewOrganizationBasic, f.Key) ? "*" : " ",
+                        Permissions.HasPermission(PermissionType.ViewOrganizationBasic, f.Key) ? "*" : " ",
+                        Permissions.HasPermission(PermissionType.AdminOrganization, f.Key) ? "*" : " ")
+                }).ToArray()
             };
-            
+
             ViewData["hideMenu"] = true;
             return View(model);
         }
 
+        /// <summary>
+        /// code sandbox
+        /// </summary>
+        /// <param name="q"></param>
+        /// <returns></returns>
         public ActionResult Test(string q)
         {
             string filename = "test";
@@ -70,53 +82,11 @@ namespace SarTracks.Website.Controllers
             sheet.CellAt(0, 4).SetValue(77);
 
             sheet.CellAt(0, 0).SetValue(sheet.CellAt(0, 1).NumericValue ?? -42);
-            
+
             System.IO.MemoryStream ms = new System.IO.MemoryStream();
             file.Save(ms);
             ms.Seek(0, System.IO.SeekOrigin.Begin);
             return this.File(ms, file.Mime, file.AddExtension(filename));
-
-    //        // Getting the complete workbook...
-    //        NPOI.HSSF.UserModel.HSSFWorkbook workbook = new NPOI.HSSF.UserModel.HSSFWorkbook();
-
-    //    // Getting the worksheet by its name...
-    //    var sheet = workbook.CreateSheet("Sheet1");
-
-    //    if (sheet.LastRowNum < 4)
-    //    {
-    //        sheet.CreateRow(4);
-    //    }
-
-    //    // Getting the row... 0 is the first row.
-    //    var dataRow = sheet.GetRow(4);
-
-    //    if (dataRow.LastCellNum < 0)
-    //    {
-    //        dataRow.CreateCell(0);
-    //    }
-
-    //    // Setting the value 77 at row 5 column 1
-    //    dataRow.GetCell(0).SetCellValue(77);
-
-    //    // Forcing formula recalculation...
-    ////    sheet.ForceFormulaRecalculation = true;
-
-    //    //MemoryStream ms = new MemoryStream();
-
-    //    //// Writing the workbook content to the FileStream...
-    //    //templateWorkbook.Write(ms);
-
-    //    //TempData["Message"] = "Excel report created successfully!";
-
-    //    //// Sending the server processed data back to the user computer...
-    //    //return File(ms.ToArray(), "application/vnd.ms-excel", "NPOINewFile.xls");
- 
-
-    //        System.IO.MemoryStream ms = new System.IO.MemoryStream();
-    //        workbook.Write(ms);
-    //        ms.Seek(0, System.IO.SeekOrigin.Begin);
-    //        return this.File(ms, "application/vnd.ms-excel", filename);
-
         }
 
         public ActionResult About()

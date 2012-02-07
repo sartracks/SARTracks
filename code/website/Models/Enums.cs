@@ -52,4 +52,11 @@ namespace SarTracks.Website.Models
         Male,
         Female
     }
+
+    public enum UserState
+    {
+        Verification,
+        Okay,
+        Locked
+    }
 }

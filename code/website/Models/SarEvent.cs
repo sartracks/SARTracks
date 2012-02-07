@@ -35,7 +35,9 @@ namespace SarTracks.Website.Models
         IEnumerable<IEventAttendance> Roster { get; }
     }
 
-    public abstract class SarEvent<R> : SarObject, IValidatableObject, ISarEvent where R : IEventAttendance
+    public abstract class SarEvent<R,T> : SarObject, IValidatableObject, ISarEvent
+        where R : IEventAttendance
+        where T : ITimelineEntry
     {
         public SarEvent()
         {
@@ -65,8 +67,12 @@ namespace SarTracks.Website.Models
         
         public ICollection<R> Roster { get; set; }
 
+        public ICollection<T> Timeline { get; set; }
+
         IEnumerable<IEventAttendance> ISarEvent.Roster { get { return this.Roster.Cast<IEventAttendance>(); } }
         
+        
+
         /// <summary></summary>
         /// <param name="validationContext"></param>
         /// <returns></returns>

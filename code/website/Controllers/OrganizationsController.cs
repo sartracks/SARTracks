@@ -24,48 +24,83 @@ namespace SarTracks.Website.Controllers
     using System.Web.Mvc;
     using System.Web.Security;
     using SarTracks.Website.Models;
+    using SarTracks.Website.Services;
+    using SarTracks.Website.ViewModels;
 
     public class OrganizationsController : ControllerBase
     {
+        public const string VIEWDATA_LIST_TIMEZONES = "listTimezones";
+        public const string VIEWDATA_LIST_VISIBILITY = "listVisibility";
+
+        public OrganizationsController() : base() { }
+        public OrganizationsController(AuthIdentityService perms, DataStoreFactory factory) : base(perms, factory) { }
+
         [HttpGet]
         [Authorize]
         public ActionResult Create()
         {
-            SarUnit newOrg = new SarUnit { AdminAccount = Permissions.Username };
-            ViewData["timezones"] = new SelectList(TimeZoneInfo.GetSystemTimeZones().Select(f => new { Id = f.Id, Name = string.Format("[{0}{1:hh\\:mm}] {2}", (f.BaseUtcOffset.TotalHours < 0) ? '-' : '+', f.BaseUtcOffset, f.StandardName) }), "Id", "Name");
-            return View(newOrg);
+            string selectedRole = AuthIdentityService.USERS_ROLE;
+            var arguments = new NewOrganizationViewModel
+            {
+                Org = new SarUnit { AdminAccount = Permissions.UserLogin },
+                Visibility = selectedRole
+            };
+            ViewData[OrganizationsController.VIEWDATA_LIST_TIMEZONES] = new SelectList(TimeZoneInfo.GetSystemTimeZones().Select(f => new { Id = f.Id, Name = string.Format("[{0}{1:hh\\:mm}] {2}", (f.BaseUtcOffset.TotalHours < 0) ? '-' : '+', f.BaseUtcOffset, f.StandardName) }), "Id", "Name");
+            ViewData[OrganizationsController.VIEWDATA_LIST_VISIBILITY] = new SelectList(new[] { AuthIdentityService.EVERYONE_ROLE, AuthIdentityService.USERS_ROLE, AuthIdentityService.MISSION_VIEWERS_ROLE, "Restricted" }, selectedRole);
+            return View(arguments);
         }
 
         [Authorize]
         [HttpPost]
-        public ActionResult Create(SarUnit model)
+        public ActionResult Create(NewOrganizationViewModel model)
         {
-            model.AdminAccount = Permissions.Username;
+            var org = model.Org;
             if (ModelState.IsValid)
             {
                 using (var ctx = GetRepository())
                 {
+                    ctx.Users.Attach(Permissions.User);
+
                     // Default status types
-                    model.UnitStatusTypes.Add(new UnitStatusType { Name = "Active", IsActive = true, IsMissionQualified = true, Organization = model });
-                    model.UnitStatusTypes.Add(new UnitStatusType { Name = "Inactive", IsActive = false, IsMissionQualified = false, Organization = model });
+                    org.UnitStatusTypes.Add(new UnitStatusType { Name = "Active", IsActive = true, IsMissionQualified = true, Organization = org });
+                    org.UnitStatusTypes.Add(new UnitStatusType { Name = "Inactive", IsActive = false, IsMissionQualified = false, Organization = org });
 
-                    ctx.Organizations.Add(model);
+                    ctx.Organizations.Add(org);
+
+                    ctx.InitializeOrganizationSecurity(org, Permissions.User);
+
                     ctx.SaveChanges();
-                    
-                    // Security roles
-                    string adminRoleName = string.Format("org{0}.admins", model.Id);
-                    Roles.CreateRole(adminRoleName);
-                    string userRole = string.Format("org{0}.users", model.Id); 
-                    Roles.CreateRole(userRole);
-                    ((NestedRoleProvider)Roles.Provider).AddRoleToRole(adminRoleName, userRole);
-                    Permissions.AddUserToRole(Permissions.Username, adminRoleName);
 
-                    return RedirectToAction("Home", new { q = model.Id });
+                    return RedirectToAction("Home", new { q = org.Id });
                 }
             }
 
-            // If we got this far, something failed, redisplay form
+            // If we got this far, something failed - redisplay form
             return View(model);
+        }
+
+        [Authorize]
+        [HttpPost]
+        public DataActionResult DoDeleteOrganization(Guid q)
+        {
+            List<SubmitError> errors = new List<SubmitError>();
+            bool result = false;
+            Organization model = null;
+            using (var ctx = GetRepository())
+            {
+                model = ctx.Organizations.SingleOrDefault(f => f.Id == q);
+                if (model != null)
+                {
+                    ctx.Organizations.Remove(model);
+                    ctx.SaveChanges();
+                    result = true;
+                }
+                else
+                {
+                    errors.Add(new SubmitError { Error = "Organization not found", Id = new [] { q } });
+                }
+            }
+            return Data(new SubmitResult<bool> { Result = result, Errors = errors.ToArray() });
         }
 
         [Authorize]
@@ -85,6 +120,41 @@ namespace SarTracks.Website.Controllers
 
 
             return View(model);
+        }
+
+        [Authorize]
+        [HttpGet]
+        public ActionResult Settings(Guid q)
+        {
+            Organization model = null;
+            using (var ctx = GetRepository())
+            {
+                model = ctx.Organizations.SingleOrDefault(f => f.Id == q);
+
+                if (!model.IsApproved)
+                {
+                    ViewData["warning"] = "Your organization has not been approved by the site administrator, and will not be displayed in site reports.";
+                }
+            }
+
+            return View(model);
+        }
+
+        [Authorize]
+        [HttpGet]
+        public ActionResult StatusManagement(Guid q)
+        {
+            if (!Permissions.HasPermission(PermissionType.ViewOrganizationDetail, q)) return GetLoginError();
+
+            UnitStatusType model = new UnitStatusType();
+            using (var ctx = GetRepository())
+            {
+                var org = ctx.Organizations.Single(f => f.Id == q);
+                model.Organization = org;
+                model.OrganizationId = org.Id;
+            }
+
+            return PartialView(model);
         }
 
         [HttpPost]
@@ -110,21 +180,23 @@ namespace SarTracks.Website.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles="Administrators")]
         public ActionResult List()
         {
+            if (!Permissions.HasPermission(PermissionType.SiteAdmin, null)) return GetLoginRedirect();
             return View();
         }
 
         [HttpPost]
         public DataActionResult GetList()
         {
-            if (!Permissions.IsInRole("Administrators")) return GetLoginError();
+            //if (!Permissions.IsInRole(AuthIdentityService.ADMIN_ROLE)) return GetLoginError();
 
             Organization[] model;
             using (var ctx = GetRepository())
             {
-                model = ctx.Organizations.OrderBy(f => f.LongName).ToArray();
+                model = ctx.Organizations
+                    .OrderBy(f => f.LongName).AsEnumerable()
+                    .Where(f => Permissions.HasPermission(PermissionType.ListOrganization, f.Id)).ToArray();
             }
             return Data(model);
         }
@@ -133,20 +205,21 @@ namespace SarTracks.Website.Controllers
         [Authorize]
         public ActionResult StatusTypes(Guid q)
         {
-            if (!Permissions.CanViewOrganization(q)) return GetLoginRedirect();
+            if (!Permissions.HasPermission(PermissionType.ViewOrganizationDetail, q)) return GetLoginRedirect();
 
-            SarUnit unit;
+            Organization unit;
             using (var ctx = GetRepository())
             {
-                unit = (SarUnit)ctx.Organizations.SingleOrDefault(f => f.Id == q);
+                unit = (Organization)ctx.Organizations.SingleOrDefault(f => f.Id == q);
             }
             return View(unit);
         }
 
         [HttpGet]
+        [Authorize]
         public ActionResult CreateStatus(Guid q)
         {
-            if (!Permissions.CanAdminOrganization(q)) return GetLoginRedirect();
+            if (!Permissions.HasPermission(PermissionType.AdminOrganization, q)) return GetLoginRedirect();
 
             UnitStatusType model;
             using (var ctx = GetRepository())
@@ -161,9 +234,10 @@ namespace SarTracks.Website.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public ActionResult EditStatus(Guid q, Guid status)
         {
-            if (!Permissions.CanAdminOrganization(q)) return GetLoginRedirect();
+            if (!Permissions.HasPermission(PermissionType.AdminOrganization, q)) return GetLoginRedirect();
             UnitStatusType model;
             using (var ctx = GetRepository())
             {
@@ -174,9 +248,10 @@ namespace SarTracks.Website.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public DataActionResult SaveStatus(Guid q, UnitStatusType model)
         {
-            if (!Permissions.CanAdminOrganization(q)) return GetLoginError();
+            if (!Permissions.HasPermission(PermissionType.AdminOrganization, q)) return GetLoginError();
 
             SubmitResult<UnitStatusType> result = new SubmitResult<UnitStatusType>();
             ModelState.Remove("Organization");
@@ -193,7 +268,7 @@ namespace SarTracks.Website.Controllers
                     {
                         oldModel.CopyFrom(model);
                     }
-                    
+
                     ctx.SaveChanges();
                 }
             }
@@ -203,14 +278,15 @@ namespace SarTracks.Website.Controllers
 
 
         [HttpPost]
-        public DataActionResult GetStatusTypes(Guid id)
+        [Authorize]
+        public DataActionResult GetStatusTypes(Guid q)
         {
-            if (!Permissions.CanViewOrganization(id)) return GetLoginError();
+            if (!Permissions.HasPermission(PermissionType.ViewOrganizationBasic, q)) return GetLoginError();
 
             UnitStatusType[] model;
             using (var ctx = GetRepository())
             {
-                model = ctx.Organizations.Where(f => f.Id == id).SelectMany(f => f.UnitStatusTypes).ToArray();
+                model = ctx.Organizations.Where(f => f.Id == q).SelectMany(f => f.UnitStatusTypes).ToArray();
             }
 
             return Data(model);

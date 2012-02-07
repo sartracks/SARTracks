@@ -62,7 +62,10 @@ namespace SarTracks.Website.Models
         public ICollection<MemberAddress> Addresses { get; set; }
         public ICollection<MemberContact> ContactInfo { get; set; }
 
+        public ICollection<User> Accounts { get; set; }
+
         public string ReverseName { get { return this.LastName + ", " + this.FirstName; } }
+        public string FullName { get { return this.FirstName + " " + this.LastName; } }
 
         public override void CopyFrom(SarObject right)
         {

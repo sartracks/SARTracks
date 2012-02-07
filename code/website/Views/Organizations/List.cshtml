@@ -68,7 +68,7 @@
     {
       if (newState == true || confirm('Disable organization "' + name + '"?'))
       {
-          $.ajax({type: 'POST', url: '@Url.Action("SetOrganizationApproved")', data: { id: id, approved: newState }, dataType: 'json',
+          $.ajax({type: 'POST', url: '@Url.Action("SetOrganizationApproved")', data: { q: id, approved: newState }, dataType: 'json',
               success: function(data) {
                 load();
               }
@@ -80,7 +80,7 @@
     {
         if (confirm('Completely remove organization "'+name+'"?'))
         {
-          $.ajax({type: 'POST', url: '@Url.Action("DoDeleteOrganization")', data: { id: id }, dataType: 'json',
+          $.ajax({type: 'POST', url: '@Url.Action("DoDeleteOrganization")', data: { q: id }, dataType: 'json',
               success: function(data) {
                 load();
               }

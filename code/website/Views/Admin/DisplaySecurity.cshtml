@@ -1,0 +1,68 @@
+﻿@{
+    ViewBag.Title = "DisplaySecurity";
+}
+<h2>
+    Display Security</h2>
+<div id="securityRoot">
+<ul id="securityTree"></ul>
+</div>
+<script type="text/javascript">
+    function roleName(role) {
+        return ((role.Organization == null) ? "" : ("[" + role.Organization.Name + "] ")) + role.Name;
+    }
+
+    function loadRole(liElement) {
+        roleId = liElement.id.substring(1);
+
+        $.ajax({ type: 'POST', url: '@Url.Action("GetRoleSecurity")', data: { q: roleId }, dataType: 'json',
+            success: function (data) {
+                root = $(liElement).find("ul").html('');
+                $('<li>My ID: ' + roleId + '</li>').appendTo(root);
+                for (var i in data.Authorizations) {
+                    $('<li>' + data.Authorizations[i].PermissionName + ' // Scope:' + data.Authorizations[i].Scope + '</li>').appendTo(root);
+                }
+                for (var i in data.Children) {
+                    $('<li>Role: ' + roleName(data.Children[i]) + '</li>').appendTo(root);
+                }
+                for (var i in data.Users) {
+                    $('<li>User: ' + data.Users[i] + '</li>').appendTo(root);
+                }
+            }
+        });
+    }
+
+    $(document).ready(function () {
+
+        global_showProgress();
+        $.ajax({ type: 'POST', url: '@Url.Action("GetRoles")', data: null, dataType: 'json',
+            success: function (data) {
+                global_hideProgress();
+                var tree = $('#securityTree');
+                for (var i in data) {
+                    $('<li id="i' + data[i].Id + '">' + ((data[i].Organization == null) ? "" : ("[" + data[i].Organization.Name + "] ")) + data[i].Name + '<ul/></li>')
+                        .appendTo(tree)
+                        .click(function () { loadRole(this); });
+
+                }
+
+                //                if (data.Errors.length > 0) {
+                //                    alert('validation errors');
+                //                }
+                //                else {
+                //                    debugger;
+                //                }
+            },
+            error: function () {
+                global_hideProgress();
+                alert('An unknown error occurred. You may want to try submitting again.');
+            },
+            statusCode: {
+                403: function () {
+                    global_hideProgress();
+                    alert('not logged in. Please refresh');
+                }
+            }
+        });
+    });
+                
+</script>

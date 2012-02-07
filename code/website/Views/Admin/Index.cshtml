@@ -1,0 +1,13 @@
+﻿@using Microsoft.Web.Mvc
+@using SarTracks.Website.Controllers
+
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Index</h2>
+<ul>
+  <li>@(Html.ActionLink<OrganizationsController>(f => f.List(), "List all organizations"))</li>
+  <li>@(Html.ActionLink<AdminController>(f => f.DisplaySecurity(), "Display Security Assignments"))</li>
+
+</ul>

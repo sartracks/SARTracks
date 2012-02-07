@@ -25,33 +25,52 @@ namespace SarTracks.Website.Controllers
     using SarTracks.Website.Models;
     using SarTracks.Website.ViewModels;
     using SarTracks.Website.Services;
+    using System.Runtime.Serialization;
 
-    public abstract class SarEventController<T,R> : ControllerBase where T : SarEvent<R> where R : IEventAttendance
+    public abstract class SarEventController<E,R,T> : ControllerBase where E : SarEvent<R, T> where R : IEventAttendance where T : ITimelineEntry
     {
-        //
-        // GET: /SarEvent/
-
         [HttpGet]
-        public ActionResult Index()
+        public ActionResult List(string units)
         {
-            return List();
+            EventFilter filter = new EventFilter();
+            if (!string.IsNullOrWhiteSpace(units))
+            {
+                filter.Units = units.Split(',').Select(f => Guid.Parse(f.Trim())).ToArray();
+            }
+
+            ViewData["filter"] = new JsonDataContractResult(filter).GetJsonString();
+            ViewData["canAdd"] = UserCanAdd(filter);
+            return View("EventList", typeof(E));
         }
 
-        [HttpGet]
-        public ActionResult List()
-        {
-            return View("EventList", typeof(T));
-        }
+        protected abstract IQueryable<E> GetEventSummaries(IDataStoreService context);
 
-        protected abstract IQueryable<T> GetEventSummaries(IDataStoreService context);
+        protected abstract bool UserCanAdd(EventFilter currentFilter);
+
+        protected virtual IQueryable<E> ApplyFilter(IQueryable<E> list, EventFilter filter)
+        {
+            if (filter.Begin.HasValue)
+            {
+                list = list.Where(f => f.Start >= filter.Begin.Value);
+            }
+            if (filter.End.HasValue)
+            {
+                list = list.Where(f => f.Start < filter.End.Value);
+            }
+            return list;
+        }
 
         [HttpPost]
-        public DataActionResult GetList()
+        public DataActionResult GetList(EventFilter filter)
         {
             EventSummaryView[] model;
             using (var ctx = GetRepository())
             {
-                model = GetEventSummaries(ctx).IncludePaths("Roster").OrderByDescending(f => f.Start).ToArray().Select(f =>
+                var query = GetEventSummaries(ctx).IncludePaths("Roster");
+
+                query = ApplyFilter(query, filter);
+
+                model = query.OrderByDescending(f => f.Start).ToArray().Select(f =>
                     new EventSummaryView
                     {
                         Id = f.Id,
@@ -63,7 +82,24 @@ namespace SarTracks.Website.Controllers
                         Miles = f.Roster.Sum(g => g.Miles)
                     }).ToArray();
             }
+
             return Data(model);
+        }
+
+        [DataContract]
+        public class TimeRangeFilter
+        {
+            [DataMember(EmitDefaultValue = false)]
+            public DateTime? Begin { get; set; }
+
+            [DataMember(EmitDefaultValue = false)]
+            public DateTime? End { get; set; }
+        }
+
+        public class EventFilter : TimeRangeFilter
+        {
+            [DataMember]
+            public Guid[] Units { get; set; }
         }
     }
 }

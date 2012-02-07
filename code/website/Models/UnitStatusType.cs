@@ -27,6 +27,9 @@ namespace SarTracks.Website.Models
     [DataContract]
     public class UnitStatusType : SarObject
     {
+        [ForeignKey("Organization")]
+        public Guid OrganizationId { get; set; }
+
         [Required]
         public Organization Organization { get; set; }
 

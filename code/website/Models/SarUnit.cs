@@ -27,6 +27,6 @@ namespace SarTracks.Website.Models
     [DataContract]
     public class SarUnit : Organization
     {
-
+        public ICollection<Mission> Missions { get; set; }
     }
 }

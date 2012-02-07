@@ -23,8 +23,15 @@ namespace SarTracks.Website.Models
     using System.Text;
     using System.ComponentModel.DataAnnotations;
 
-    public class Mission : SarEvent<MissionAttendance>
+    public class Mission : SarEvent<MissionAttendance,MissionTimelineEntry>
     {
+        public Mission()
+        {
+            this.RespondingUnits = new List<MissionUnitResponse>();
+        }
+
         public MissionType Type { get; set; }
+
+        public ICollection<MissionUnitResponse> RespondingUnits { get; set; }        
     }
 }

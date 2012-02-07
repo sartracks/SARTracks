@@ -23,16 +23,20 @@ namespace SarTracks.Website.Models
     using System.Web;
     using System.Runtime.Serialization;
     using System.Data.Spatial;
+    using System.ComponentModel.DataAnnotations;
 
     [DataContract]
     public class Address
     {
         [DataMember]
         public string Street { get; set; }
+
         [DataMember]
         public string City { get; set; }
+        
         [DataMember]
         public string State { get; set; }
+
         [DataMember]
         public string Zip { get; set; }
 

@@ -85,10 +85,10 @@ member. When you use OpenID sign-in your password is never transmitted to SARTra
                 @Html.CheckBoxFor(m => m.RememberMe)
                 @Html.LabelFor(m => m.RememberMe)
             </div>
-
             <p>
                 <input type="submit" value="Log On" />
             </p>
+            @Html.ActionLink("Forgot Password?", "ResetPassword", null, new { style = "font-size:80%" })
        @* </fieldset>*@
     </div>
 }

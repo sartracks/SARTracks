@@ -1,0 +1,19 @@
+﻿@model SarTracks.Website.Models.UnitStatusType
+@using SarTracks.Website.Models;
+
+<div id="StatusDialog" title="Create Member Status Type" style="display:none;">
+    <p class="validateTips"></p>
+
+    <form method="post" id="NewMembershipForm" action="#">
+    <input type="hidden" value="@Model.OrganizationId" name="OrganizationId" />
+    </form>
+</div>
+
+<script type="text/javascript">
+        setupFormDialog($('#StatusDialog'),
+    450, 450,
+    "Create Status",
+    '@Url.Action("SubmitOrgStatus")',
+    function (data) { loadStatus(); return true; } //on success update table with new object
+);
+</script>

@@ -30,6 +30,8 @@ namespace SarTracks.Website.Controllers
 
     public class UnitsController : ControllerBase
     {
+        public const string VIEWDATA_CANADDUSER = "canAddUser";
+
         //
         // GET: /Units/
 
@@ -42,16 +44,14 @@ namespace SarTracks.Website.Controllers
         [Authorize]
         public ActionResult Roster(Guid q)
         {
-            if (!Permissions.CanViewOrganization(q)) return GetLoginRedirect();
-            //var orgs = GetUsersDatabaseOrgs(this.AccountMetadata.LinkedMember, this.Account.UserName);
-            //if (!orgs.Any(f => f.Key == q)) return GetLoginRedirect();
+            if (!Permissions.HasPermission(PermissionType.ViewOrganizationDetail, q)) return GetLoginRedirect();
 
             Organization model;
             using (var ctx = GetRepository())
             {
                 model = ctx.Organizations.Single(f => f.Id == q);
             }
-            ViewData["canAddUser"] = ((NestedRoleProvider)Roles.Provider).IsUserInRole(this.Account.UserName, string.Format("org{0}.admins", q), true);
+            ViewData[UnitsController.VIEWDATA_CANADDUSER] = Permissions.HasPermission(PermissionType.AddOrganizationMembers, q);
 
             return View(model);
         }
@@ -59,13 +59,7 @@ namespace SarTracks.Website.Controllers
         [HttpGet]
         public ActionResult RosterManagement(Guid q)
         {
-            if (!Permissions.CanAdminOrganization(q)) return GetLoginError();
-
-            //NewUnitMemberViewModel model = new NewUnitMemberViewModel
-            //{
-            //    Member = new SarMember(),
-            //    Membership = new UnitMembership { Status = new UnitStatusType() }
-            //};
+            if (!Permissions.HasPermission(PermissionType.ViewOrganizationDetail, q)) return GetLoginError();
 
             UnitMembership model = new UnitMembership
             {
@@ -78,7 +72,6 @@ namespace SarTracks.Website.Controllers
                 model.Organization = org;
                 model.OrganizationId = org.Id;
                 model.Status = org.UnitStatusTypes.First();
-                //model.Membership.Member = model.Member;
             }
 
             return PartialView(model);
@@ -108,7 +101,7 @@ namespace SarTracks.Website.Controllers
         [HttpGet]
         public ActionResult ImportRoster(Guid q)
         {
-            if (!Permissions.CanAdminOrganization(q)) return GetLoginRedirect();
+            if (!Permissions.HasPermission(PermissionType.AddOrganizationMembers, q)) return GetLoginRedirect();
 
             Organization org;
             using (var ctx = GetRepository())
@@ -127,14 +120,14 @@ namespace SarTracks.Website.Controllers
             Func<string, ActionResult> fail = x => { ViewData["error"] = x; return ImportRoster(q); };
 
             // Permission check
-            if (!Permissions.CanAdminOrganization(q)) return GetLoginRedirect();
+            if (!Permissions.HasPermission(PermissionType.AddOrganizationMembers, q)) return GetLoginRedirect();
 
             // Basic validation of file
             if (Request.Files.Count != 1)
             {
                 throw new InvalidOperationException("Can only submit one roster");
             }
-            
+
             Organization org;
             UnitStatusType defaultStatus;
             using (var ctx = this.GetRepository())
@@ -157,7 +150,7 @@ namespace SarTracks.Website.Controllers
             ExcelFile file;
             try
             {
-                file = ExcelService.Read(postedFile.InputStream, fileType);                
+                file = ExcelService.Read(postedFile.InputStream, fileType);
             }
             catch
             {
@@ -173,7 +166,7 @@ namespace SarTracks.Website.Controllers
             int col = -1;
             do
             {
-                col++;               
+                col++;
                 string header = sheet.CellAt(0, col).StringValue;
                 if (string.IsNullOrWhiteSpace(header))
                 {
@@ -212,7 +205,7 @@ namespace SarTracks.Website.Controllers
                 {
                     break;
                 }
-                
+
                 using (var ctx = GetRepository())
                 {
                     ctx.Organizations.Attach(org);
@@ -221,7 +214,7 @@ namespace SarTracks.Website.Controllers
                     string key = columnLookup.ContainsKey(RosterImportColumn.MemberId) ?
                         sheet.CellAt(row, columnLookup[RosterImportColumn.MemberId]).StringValue :
                         null;
-                    
+
                     SarMember member = null;
                     if (!string.IsNullOrWhiteSpace(key))
                     {
@@ -232,7 +225,7 @@ namespace SarTracks.Website.Controllers
 
                         member = query.SelectMany(f => f).FirstOrDefault();
                     }
-                    
+
                     // If the member was not found by external key, add it to this database.
                     if (member == null)
                     {
@@ -241,22 +234,23 @@ namespace SarTracks.Website.Controllers
 
                         if (!string.IsNullOrWhiteSpace(key))
                         {
-                            ctx.ExternalReferences.Add(new ExternalReference {
+                            ctx.ExternalReferences.Add(new ExternalReference
+                            {
                                 Source = externalKeySource,
                                 ExternalKey = key,
                                 InternalKey = member.Id
                             });
-                        }                        
+                        }
                     }
 
                     // Some data is updated all the time.
                     // First and Last names are.
                     member.LastName = lastname;
-                    
+
                     member.FirstName = columnLookup.ContainsKey(RosterImportColumn.FirstName) ?
                         sheet.CellAt(row, columnLookup[RosterImportColumn.FirstName]).StringValue :
                         null;
-                
+
                     // Birthdate is updated if the column exists.
                     // I think this is formatted differently than the FirstName because it was using more
                     // than one statement. Should be able to change it back.
@@ -293,7 +287,7 @@ namespace SarTracks.Website.Controllers
                     if (columnLookup.ContainsKey(RosterImportColumn.Status))
                     {
                         status = org.UnitStatusTypes.Single(
-                            f => f.Name.Equals(sheet.CellAt(row, columnLookup[RosterImportColumn.Status]).StringValue, StringComparison.OrdinalIgnoreCase));                                                
+                            f => f.Name.Equals(sheet.CellAt(row, columnLookup[RosterImportColumn.Status]).StringValue, StringComparison.OrdinalIgnoreCase));
                     }
 
                     string cardNumber = null;
@@ -307,7 +301,7 @@ namespace SarTracks.Website.Controllers
                         Member = member,
                         OrganizationId = org.Id,
                         Start = joined.UtcDateTime,
-                        Designator = cardNumber,
+                        WorkerNumber = cardNumber,
                         Status = status,
                         Organization = org
                     };
@@ -337,7 +331,7 @@ namespace SarTracks.Website.Controllers
                                 Member = member,
                                 Type = MemberAddressType.Mailing,
                                 Address = address
-                            });                            
+                            });
                         }
                     }
 
@@ -375,7 +369,7 @@ namespace SarTracks.Website.Controllers
                     }
 
                     ctx.SaveChanges();
-                } 
+                }
             } while (row < 1002); // Only allow 1000 rows per file
 
             if (errors.Count > 0)
@@ -389,15 +383,14 @@ namespace SarTracks.Website.Controllers
 
         [HttpGet]
         public ActionResult ImportRosterResults(Guid q, int success, int errors)
-        {            
+        {
             ViewData["rows"] = success;
             ViewData["errors"] = errors;
             return View();
         }
 
-
         [HttpPost]
-        public DataActionResult SubmitUnitMembership(UnitMembership model)
+        public DataActionResult SubmitUnitMembership(UnitMembership model, int? mode)
         {
             // Values that must be set on entering:
             //  model.OrganizationId
@@ -415,15 +408,14 @@ namespace SarTracks.Website.Controllers
             }
 
             List<SubmitError> errors = new List<SubmitError>();
-            if (!Permissions.IsUser) return GetLoginError();
-            var orgs = GetUsersDatabaseOrgs(this.AccountMetadata.LinkedMember, this.Account.UserName);
-            if (!orgs.Any(f => f.Key == model.OrganizationId)) return GetLoginError();
+            if (!Permissions.HasPermission(PermissionType.AddOrganizationMembers, model.OrganizationId)) return GetLoginError();
 
             SarMember m = model.Member;
 
             ModelState.Remove("Status.Organization");
             ModelState.Remove("Status.Name");
             ModelState.Remove("Organization");
+            ModelState.Remove("Member.Id");
 
             using (var ctx = GetRepository())
             {
@@ -466,6 +458,11 @@ namespace SarTracks.Website.Controllers
                     working.CopyFrom(model);
                 }
 
+                if (working.Member.FirstName.ToLower().Contains('q'))
+                {
+                    ModelState.AddModelError("Member.FirstName", "Test error");
+                }
+
                 //working.Member.Memberships.Add(working);
                 bool addMembership = true;
                 //foreach (var oldMembership in working.Member.OldMemberships)
@@ -492,13 +489,28 @@ namespace SarTracks.Website.Controllers
                 }
             }
 
-            return Data(new SubmitResult<UnitMembership> { Errors = errors.ToArray(), Result = model });
+            if (!mode.HasValue)
+            {
+                return Data(new SubmitResult<UnitMembership> { Errors = errors.ToArray(), Result = model });
+            }
+            else if (mode == 1)
+            {
+                return Data(new SubmitResult<RosterViewModel> { Errors = errors.ToArray(), Result = new RosterViewModel
+                {
+                    FirstName = model.Member.FirstName,
+                    LastName = model.Member.LastName,
+                    Id = model.Member.Id,
+                    Designator = model.WorkerNumber,
+                    Status = model.Status.Name
+                }});
+            }
+            throw new InvalidOperationException("Invalid mode");
         }
 
         [HttpPost]
         public DataActionResult GetRosterList(Guid q)
         {
-            if (!Permissions.CanViewOrganization(q)) return GetLoginError();
+            if (!Permissions.HasPermission(PermissionType.ViewOrganizationDetail, q)) return GetLoginError();
 
             RosterViewModel[] model;
             using (var ctx = GetRepository())
@@ -506,13 +518,13 @@ namespace SarTracks.Website.Controllers
                 DateTime now = DateTime.UtcNow;
                 model = ctx.Members.SelectMany(f => f.Memberships)
                     .Where(g => g.OrganizationId == q && g.Start < now && (g.Finish == null || g.Finish > now))
-                    .OrderBy(f => f.Member.LastName).ThenBy(f => f.Member.FirstName).Select(f =>
+                    .OrderByDescending(f => f.Member.LastName).ThenBy(f => f.Member.FirstName).Select(f =>
                 new RosterViewModel
                 {
                     Id = f.Member.Id,
                     FirstName = f.Member.FirstName,
                     LastName = f.Member.LastName,
-                    Designator = f.Designator,
+                    Designator = f.WorkerNumber,
                     Status = f.Status.Name,
                     Email = f.Member.ContactInfo.Where(g => g.Type == ContactType.Email).Select(g => g.Value).FirstOrDefault(),
                     Phone = f.Member.ContactInfo.Where(g => g.Type == ContactType.Phone).Select(g => g.Value).FirstOrDefault()

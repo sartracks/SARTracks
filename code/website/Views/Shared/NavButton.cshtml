@@ -1,5 +1,5 @@
 ﻿@model SarTracks.Website.ViewModels.NavButtonViewModel
-<div class="pick">
+<div class="@(string.IsNullOrEmpty(Model.DivClass) ? "pick" : "pick " + Model.DivClass)">
 @if (Model.Enabled) {
     <a @Html.Raw(string.IsNullOrEmpty(Model.Classes) ? "" : "class=\""+Model.Classes +'"') style="text-decoration:none;" href="@Model.Href">@_PickContent(Model.Text, Model.ImageName, Model.ImageAlt, Model.Enabled)</a>
 } else {

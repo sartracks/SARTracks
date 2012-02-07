@@ -23,9 +23,15 @@ namespace SarTracks.Website.Controllers
     using System.Web.Security;
     using SarTracks.Website.Services;
     using SarTracks.Website.ViewModels;
+    using System.Collections.Generic;
+    using System.Text.RegularExpressions;
+    using System.Text;
+using SarTracks.Website.Models;
+    using System.Data.Entity;
 
     public class AdminController : ControllerBase
     {
+        public const string VIEWDATA_ADMINPASSWORD = "adminPassword";
         //
         // GET: /Admin/        
         public ActionResult Index()
@@ -38,47 +44,12 @@ namespace SarTracks.Website.Controllers
         {
             if (!Permissions.IsLocal(Request)) return GetLoginRedirect();
 
-            string adminGroup = "administrators";
-
-            if (!Roles.RoleExists(adminGroup))
-            {
-                Roles.CreateRole(adminGroup);
-                ViewData["adminGroupCreated"] = true;
-            }
-
-            MembershipUser user = Membership.FindUsersByName("admin").Cast<MembershipUser>().SingleOrDefault();
-            if (user == null)
-            {
-                string password = Membership.GeneratePassword(10, 5);
-                user = Membership.CreateUser("admin", password);
-                ViewData["adminPassword"] = password;
-            }
-
-            if (!Permissions.IsUserInRole(user.UserName, adminGroup))
-            {
-                Permissions.AddUserToRole(user.UserName, adminGroup);
-                ViewData["adminInGroup"] = true;
-            }
-
             using (var ctx = GetRepository())
             {
-                foreach (var org in ctx.Organizations.Select(f => f.Id))
-                {
-                    string prefix = "org" + org.ToString() + '.';
-                    if (!Roles.RoleExists(prefix + "admins"))
-                    {
-                        Roles.CreateRole(prefix + "admins");
-                        ((NestedRoleProvider)Roles.Provider).AddRoleToRole("administrators", prefix + "admins");
-                    }
-                    if (!Roles.RoleExists(prefix + "users"))
-                    {
-                        Roles.CreateRole(prefix + "users");
-                        ((NestedRoleProvider)Roles.Provider).AddRoleToRole(prefix + "admins", prefix + "users");
-                    }
-                }
+                ViewData[AdminController.VIEWDATA_ADMINPASSWORD] = ctx.InitializeSystemSecurity();
             }
 
-            return View();
+            return View("Setup");
         }
 
         [HttpGet]
@@ -86,74 +57,51 @@ namespace SarTracks.Website.Controllers
         {
             if (!Permissions.IsLocal(Request)) return GetLoginRedirect();
 
-            MembershipUser user = Membership.FindUsersByName("admin").Cast<MembershipUser>().SingleOrDefault();
-            string password = user.ResetPassword();
-
-            return new ContentResult { Content = string.Format("New password is \"{0}\". <a href=\"{1}\">Change Password</a>", password, Url.Action("ChangePassword", "Account")), ContentType = "text/html" };
+            using (var ctx = GetRepository())
+            {
+                var user = ctx.Users.Single(f => f.Username == "admin");
+                string password = AuthIdentityService.ResetPassword(user);
+                ctx.SaveChanges();
+                return new ContentResult { Content = string.Format("New password is \"{0}\". <a href=\"{1}\">Change Password</a>", password, Url.Action("ChangePassword", "Account")), ContentType = "text/html" };
+            }
         }
 
         [HttpGet]
-        [Authorize(Roles="Administrators")]
-        public ActionResult Users()
+        public ActionResult DisplaySecurity()
         {
+            if (!Permissions.IsAdmin) return GetLoginRedirect();
+
             return View();
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="id">Organization ID</param>
         [HttpPost]
-        public DataActionResult GetUserList()
+        public DataActionResult GetRoles()
         {
-            if (!Permissions.IsInRole("Administrators")) return GetLoginError();
+            if (!Permissions.IsAdmin) return GetLoginError();
 
-
-            var model = Membership.GetAllUsers().Cast<MembershipUser>().Select(f =>
+            using (var ctx = this.StoreFactory.Create(Permissions.UserLogin))
             {
-                //var profile = ProfileBase.Create(f.UserName);
-                var metadata = f.GetMetadata();
+                return Data(ctx.Roles.Include("Organization").OrderBy(f => f.Organization.Name).ThenBy(f => f.Name).ToArray());
+            }
+        }
 
-                return new AccountAdminInfo
-                {
-                    UserName = f.UserName,
-                    Email = f.Email,
-                    IsLocked = f.IsLockedOut,
-                    IsApproved = f.IsApproved,
-                    LastActive = f.LastActivityDate,
-                    Created = f.CreationDate,
-                    LinkedMember = (metadata.LinkedMember  == Guid.Empty) ? (Guid?)null : metadata.LinkedMember
+        [HttpPost]
+        public DataActionResult GetRoleSecurity(Guid q)
+        {
+            if (!Permissions.IsAdmin) return GetLoginError();
+
+            using (var ctx = this.StoreFactory.Create(Permissions.UserLogin))
+            {
+                var role = ctx.Roles.IncludePaths("Users.User", "MemberRoles.Child.Organization").Single(f => f.Id == q);
+                
+                var model = new RoleSecurityViewModel {
+                    Users = role.Users.Select(f => (f.User == null) ? "" : f.User.Username).ToArray(),
+                    Children = role.MemberRoles.Select(f => f.Child).ToArray(),
+                    Authorizations = ctx.Authorization.Where(f => f.RoleId == role.Id).ToArray()
                 };
-            }).ToArray();
-
-            return Data(model);
-        }
-
-        [HttpPost]
-        public DataActionResult DoRemoveUser(string q)
-        {
-            if (!Permissions.IsInRole("Administrators")) return GetLoginError();
-
-            SubmitResult<bool> result = new SubmitResult<bool>();
-            
-            result.Result = Membership.DeleteUser(q);
-
-            return Data(result);
-        }
-
-        [HttpPost]
-        public DataActionResult SetUserApproved(string q, bool approved)
-        {
-            if (!Permissions.IsInRole("Administrators")) return GetLoginError();
-
-            SubmitResult<bool> result = new SubmitResult<bool>();
-
-            MembershipUser user = Membership.GetUser(q);
-            user.IsApproved = approved;
-            Membership.UpdateUser(user);
-            result.Result = true;
-
-            return Data(result);
+                
+                return Data(model);
+            }
         }
     }
 }

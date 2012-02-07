@@ -18,7 +18,10 @@
 namespace SarTracks.Website.Controllers
 {
     using System;
+    using System.Collections.Generic;
     using System.Configuration;
+    using System.Linq;
+    using System.Text.RegularExpressions;
     using System.Net;
     using System.Web;
     using System.Web.Mvc;
@@ -29,13 +32,30 @@ namespace SarTracks.Website.Controllers
     using DotNetOpenAuth.OpenId.RelyingParty;
     using SarTracks.Website.Services;
     using SarTracks.Website.ViewModels;
+    using SarTracks.Website.Models;
+    using System.Globalization;
 
     public class AccountController : ControllerBase
     {
+        public AccountController() : base() { }
+        public AccountController(AuthIdentityService perms, DataStoreFactory factory) : base(perms, factory) { }
+
         /// <summary>
         /// Gets the OpenID relying party to use for logging users in.
         /// </summary>
-        public IOpenIdRelyingParty RelyingParty = new OpenIdRelyingPartyService();
+        public IOpenIdRelyingParty RelyingParty
+        {
+            get
+            {
+                if (this._relyingParty == null)
+                {
+                    this._relyingParty = new OpenIdRelyingPartyService();
+                }
+                return this._relyingParty;
+            }
+        }
+        private IOpenIdRelyingParty _relyingParty = null;
+
 
         private Uri PrivacyPolicyUrl
         {
@@ -45,6 +65,7 @@ namespace SarTracks.Website.Controllers
             }
         }
 
+        [Authorize]
         public ActionResult Index()
         {
             return View();
@@ -55,7 +76,7 @@ namespace SarTracks.Website.Controllers
             AccountInfo info = null;
             if (Permissions.IsAuthenticated)
             {
-                info = new AccountInfo { Username = Permissions.Username, HasAccount = false };
+                info = new AccountInfo { Username = Permissions.UserLogin, HasAccount = false };
                 MembershipUser user = Membership.GetUser(info.Username);
                 if (user != null)
                 {
@@ -68,6 +89,67 @@ namespace SarTracks.Website.Controllers
             return View(info);
         }
 
+        [HttpGet]
+        public ActionResult ResetPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public ActionResult ResetPassword(string q)
+        {
+            using (var ctx = GetRepository())
+            {
+                User u = ctx.Users.SingleOrDefault(f => f.Username == q);
+                if (u == null)
+                {
+                    ViewData["error"] = new MvcHtmlString("Username '" + q + "' is not found");
+                    return View();
+                }
+
+                string password = AuthIdentityService.ResetPassword(u);
+                ctx.SaveChanges();
+
+                MailService.SendMail(u.Email, "SARTracks password reset", "Your password has been reset. Your new password is:\n" + password + "");
+
+                return RedirectToAction("ResetPasswordSuccess", new { q = u.Email });
+            }
+        }
+
+        public ActionResult ResetPasswordSuccess(string q)
+        {
+            return View("ResetPasswordSuccess", new MvcHtmlString(q) );
+        }
+
+        [Authorize]
+        public ActionResult Settings()
+        {
+            return View();
+        }
+
+        [Authorize]
+        public ActionResult MyRoles()
+        {
+            return View();
+        }
+
+        public const string ORG_ROLE_PATTERN = "^org(.{36})\\.(.*)$";
+
+        [Authorize]
+        public DataActionResult GetMyRoles()
+        {
+            string[] roles = null;
+
+            roles = Permissions.GetRolesForUser(Permissions.UserLogin, true);
+
+            return Data(roles.OrderBy(f => f));
+        }
+
+        [Authorize]
+        public DataActionResult GetMyPermissions()
+        {
+            return Data(null);
+        }
 
         //
         // GET: /Account/LogOn
@@ -86,7 +168,7 @@ namespace SarTracks.Website.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (Membership.ValidateUser(model.UserName, model.Password))
+                if (Permissions.ValidateUser(model.UserName, model.Password) == LogonResult.Okay)
                 {
                     FormsAuthentication.SetAuthCookie(model.UserName, model.RememberMe);
                     if (Url.IsLocalUrl(returnUrl) && returnUrl.Length > 1 && returnUrl.StartsWith("/")
@@ -187,14 +269,6 @@ namespace SarTracks.Website.Controllers
                             alias = sreg.FullName;
                         }
 
-                        //FormsAuthenticationTicket authTicket = new
-                        //    FormsAuthenticationTicket(1, //version
-                        //    response.ClaimedIdentifier, // user name
-                        //    DateTime.Now,             //creation
-                        //    DateTime.Now.AddMinutes(30), //Expiration
-                        //    false, //Persistent
-                        //    alias);
-
                         FormsAuthenticationTicket authTicket = new
                             FormsAuthenticationTicket(1, //version
                             email, // user name
@@ -273,30 +347,48 @@ namespace SarTracks.Website.Controllers
 
         private ActionResult RegisterAccount(RegisterModel model)
         {
+            if (model.Password != model.ConfirmPassword)
+            {
+                ModelState.AddModelError("ConfirmPassword", "Passwords do not match");
+            }
+
             if (ModelState.IsValid)
             {
-                // Attempt to register the user
-                MembershipCreateStatus createStatus;
-                MembershipUser newUser = Membership.CreateUser(model.UserName, model.Password, model.Email, null, null, false, null, out createStatus);
-                Guid verifyKey = Guid.NewGuid();
-
-
-                if (createStatus == MembershipCreateStatus.Success)
+                using (var ctx = this.GetRepository())
                 {
-                    // Store key to use to validate email
-                    UserMetadata userdata = newUser.GetMetadata();
-                    userdata.VerifyKey = verifyKey;
-                    newUser.SetMetadata(userdata);
+                    User u = ctx.Users.SingleOrDefault(f => f.Username == model.UserName);
+                    if (u != null)
+                    {
+                        ModelState.AddModelError("UserName", "Not available");
+                        ModelState.SetModelValue("UserName", new ValueProviderResult(model.UserName, model.UserName, CultureInfo.CurrentUICulture));
+                    }
+                    else
+                    {
+                        
+                        u = new User
+                        {
+                            Username = model.UserName,
+                            Name = string.Format("{0} {1}", model.FirstName, model.LastName),
+                            Email = model.Email,
+                            Password = model.Password
+                        };
+                        
+                        try
+                        {
+                            ctx.Users.Add(AuthIdentityService.SetupUser(u));
+                            ctx.SaveChanges();
 
-                    // Send email notice to user
-                    MailService.SendMail(newUser.Email, "Verify SARTracks Account",
-                        string.Format("Click the link to verify your account:\n{0}?UserName={1}&Key={2}", Url.ActionFull("Verify"), newUser.UserName, verifyKey));
+                            // Send email notice to user
+                            MailService.SendMail(u.Email, "Verify SARTracks Account",
+                                string.Format("Click the link to verify your account:\n{0}?UserName={1}&Key={2}", Url.ActionFull("Verify"), u.Username, u.ValidationKey));
 
-                    return RedirectToAction("Verify", "Account");
-                }
-                else
-                {
-                    ModelState.AddModelError("", ErrorCodeToString(createStatus));
+                            return RedirectToAction("Verify", "Account");
+                        }
+                        catch
+                        {
+                            TempData["error"] = "Error saving user. Please try again.";
+                        }
+                    }
                 }
             }
 
@@ -316,30 +408,31 @@ namespace SarTracks.Website.Controllers
             }
             else if (ModelState.IsValid)
             {
-                MembershipUser user = Membership.GetUser(model.UserName);
-                UserMetadata userData = (user == null) ? new UserMetadata() : user.GetMetadata();
-
-                // Figure out if the user is pending verification. If it is, validate the supplied key.
-                // If the key is valid, mark the user as verified and send them to a new page.
-                if (userData.VerifyKey != Guid.Empty)
+                using (var ctx = GetRepository())
                 {
-                    if (model.Key.Equals(userData.VerifyKey.ToString(), StringComparison.OrdinalIgnoreCase))
-                    {
-                        user.VerifyAccount();
-                        FormsAuthentication.SetAuthCookie(model.UserName, false /* createPersistentCookie */);
+                    User u = ctx.Users.Single(f => f.Username == model.UserName);
 
-                        return RedirectToAction("Verified", "Account");
+                    if (u.State == UserState.Verification && u.ValidationKey.HasValue)
+                    {
+                        if (model.Key.Equals(u.ValidationKey.Value.ToString(), StringComparison.OrdinalIgnoreCase))
+                        {
+                            u.ValidationKey = null;
+                            u.State = UserState.Okay;
+                            ctx.SaveChanges();
+                            Permissions.SetAuthCookie(model.UserName);
+
+                            return RedirectToAction("Index", "Home");
+                        }
+                        else
+                        {
+                            ModelState.AddModelError("Key", "Invalid verification key");
+                        }
                     }
                     else
                     {
-                        ModelState.AddModelError("Key", "Invalid verification key");
+                        ModelState.AddModelError("UserName", "Invalid user or account is not pending verification");
                     }
                 }
-                else
-                {
-                    ModelState.AddModelError("UserName", "Invalid user or account is not pending verification");
-                }
-
             }
 
             return View(model);
@@ -349,7 +442,7 @@ namespace SarTracks.Website.Controllers
         [Authorize]
         public ActionResult Verified()
         {
-            VerifyAccountModel model = new VerifyAccountModel { UserName = Permissions.Username };
+            VerifyAccountModel model = new VerifyAccountModel { UserName = Permissions.UserLogin };
             return View(model);
         }
 
@@ -359,7 +452,7 @@ namespace SarTracks.Website.Controllers
         [Authorize]
         public ActionResult RegisterOpenId()
         {
-            RegisterModel model = new RegisterModel { UserName = Permissions.Username };
+            RegisterModel model = new RegisterModel { UserName = Permissions.UserLogin };
             model.Email = model.UserName;
 
             MembershipUser user = Membership.GetUser(model.UserName);
@@ -377,7 +470,7 @@ namespace SarTracks.Website.Controllers
         [Authorize]
         public ActionResult RegisterOpenId(RegisterModel model)
         {
-            string openId = Permissions.Username;
+            string openId = Permissions.UserLogin;
             MembershipUser user = Membership.GetUser(openId);
 
             if (user != null)
@@ -408,27 +501,25 @@ namespace SarTracks.Website.Controllers
         [HttpPost]
         public ActionResult ChangePassword(ChangePasswordModel model)
         {
+            if (model.ConfirmPassword != model.NewPassword)
+            {
+                ModelState.AddModelError("ConfirmPassword", "Passwords must match");                
+            }
+
             if (ModelState.IsValid)
             {
-
-                // ChangePassword will throw an exception rather
-                // than return false in certain failure scenarios.
-                bool changePasswordSucceeded;
                 try
                 {
-                    MembershipUser currentUser = Membership.GetUser(User.Identity.Name, true /* userIsOnline */);
-                    changePasswordSucceeded = currentUser.ChangePassword(model.OldPassword, model.NewPassword);
+                    using (var ctx = GetRepository())
+                    {
+                        User u = Permissions.User;
+                        ctx.Users.Attach(u);
+                        AuthIdentityService.ChangePassword(u, model.OldPassword, model.NewPassword);
+                        ctx.SaveChanges();
+                        return RedirectToAction("ChangePasswordSuccess");
+                    }
                 }
-                catch (Exception)
-                {
-                    changePasswordSucceeded = false;
-                }
-
-                if (changePasswordSucceeded)
-                {
-                    return RedirectToAction("ChangePasswordSuccess");
-                }
-                else
+                catch
                 {
                     ModelState.AddModelError("", "The current password is incorrect or the new password is invalid.");
                 }
@@ -445,54 +536,5 @@ namespace SarTracks.Website.Controllers
         {
             return View();
         }
-
-        [HttpGet]
-        [Authorize]
-        public ActionResult LinkToOrganization()
-        {
-            return View();
-        }
-
-
-
-        #region Status Codes
-        private static string ErrorCodeToString(MembershipCreateStatus createStatus)
-        {
-            // See http://go.microsoft.com/fwlink/?LinkID=177550 for
-            // a full list of status codes.
-            switch (createStatus)
-            {
-                case MembershipCreateStatus.DuplicateUserName:
-                    return "User name already exists. Please enter a different user name.";
-
-                case MembershipCreateStatus.DuplicateEmail:
-                    return "A user name for that e-mail address already exists. Please enter a different e-mail address.";
-
-                case MembershipCreateStatus.InvalidPassword:
-                    return "The password provided is invalid. Please enter a valid password value.";
-
-                case MembershipCreateStatus.InvalidEmail:
-                    return "The e-mail address provided is invalid. Please check the value and try again.";
-
-                case MembershipCreateStatus.InvalidAnswer:
-                    return "The password retrieval answer provided is invalid. Please check the value and try again.";
-
-                case MembershipCreateStatus.InvalidQuestion:
-                    return "The password retrieval question provided is invalid. Please check the value and try again.";
-
-                case MembershipCreateStatus.InvalidUserName:
-                    return "The user name provided is invalid. Please check the value and try again.";
-
-                case MembershipCreateStatus.ProviderError:
-                    return "The authentication provider returned an error. Please verify your entry and try again. If the problem persists, please contact your system administrator.";
-
-                case MembershipCreateStatus.UserRejected:
-                    return "The user creation request has been canceled. Please verify your entry and try again. If the problem persists, please contact your system administrator.";
-
-                default:
-                    return "An unknown error occurred. Please verify your entry and try again. If the problem persists, please contact your system administrator.";
-            }
-        }
-        #endregion
     }
 }

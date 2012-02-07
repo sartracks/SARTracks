@@ -48,10 +48,10 @@ namespace SarTracks.Website.Models
 
         SarMember Member { get; set; }
         string TempMemberName { get; set; }
-        string TempMemberNumber { get; set; }
+       // string TempMemberNumber { get; set; }
 
         string MemberName { get; }
-        string MemberNumber { get; }        
+        string MemberNumber { get; set; }        
         Guid EffectiveMemberId { get; }
 
         double? TotalHours { get; set; }
@@ -61,22 +61,27 @@ namespace SarTracks.Website.Models
     }
 
     [DataContract]
-    public abstract class EventAttendance<EventType, R> : SarObject, IEventAttendance
-        where EventType : SarEvent<R>
+    public abstract class EventAttendance<EventType, R, T> : SarObject, IEventAttendance
+        where EventType : SarEvent<R, T>
         where R : IEventAttendance
+        where T : ITimelineEntry
     {
         [IgnoreDataMember]
         public EventType Event { get; set; }
         [IgnoreDataMember]
         ISarEvent IEventAttendance.Event { get { return this.Event; } }
 
-        
+        [IgnoreDataMember]
         public SarMember Member { get; set; }
         [ForeignKey("Member")]
         public Guid? MemberId { get; set; }
 
         public string TempMemberName { get; set; }
-        public string TempMemberNumber { get; set; }
+        
+        [DataMember]
+        public string MemberNumber { get; set; }
+        //public string TempMemberNumber { get; set; }
+
         public Guid? TempMemberId { get; set; }
 
         [NotMapped]
@@ -93,18 +98,18 @@ namespace SarTracks.Website.Models
             }
         }
         
-        [NotMapped]
-        [DataMember]
-        public string MemberNumber
-        {
-            get
-            {
-                return this.TempMemberNumber ?? ((this.Member == null) ? null : "$TODO: Designator");
-            }
-            protected set
-            {
-            }
-        }
+        //[NotMapped]
+        //[DataMember]
+        //public string MemberNumber
+        //{
+        //    get
+        //    {
+        //        return this.TempMemberNumber ?? ((this.Member == null) ? null : "$TODO: Designator");
+        //    }
+        //    protected set
+        //    {
+        //    }
+        //}
 
         [NotMapped]
         [DataMember]
@@ -141,7 +146,7 @@ namespace SarTracks.Website.Models
     }
 
     [DataContract]
-    public class MissionAttendance : EventAttendance<Mission, MissionAttendance>
+    public class MissionAttendance : EventAttendance<Mission, MissionAttendance, MissionTimelineEntry>
     {
         [DataMember]
         public MissionRole Role { get; set; }
@@ -177,27 +182,37 @@ namespace SarTracks.Website.Models
         }
     }
 
-    public class TrainingAttendance : EventAttendance<Training, TrainingAttendance>
+    public class TrainingAttendance : EventAttendance<Training, TrainingAttendance, TrainingTimelineEntry>
     {
         public ICollection<TrainingRecord> Records { get; set; }
     }
 
-    public abstract class TimelineEntry<AttendanceType, T> : SarObject
-        where AttendanceType : EventAttendance<T, AttendanceType>
-        where T : SarEvent<AttendanceType>
+    public interface ITimelineEntry
+    {
+        DateTime Time { get; set; }
+        ISarEvent Event { get; set; }
+        IEventAttendance Attendance { get; set; }
+        TimelineStatus State { get; set; }
+    }
+
+    public abstract class TimelineEntry : SarObject, ITimelineEntry
     {
         // public Something Responder { get; set; }
         public DateTime Time { get; set; }
-        public AttendanceType Event { get; set; }
+        
+        public ISarEvent Event { get; set; }
+
         public TimelineStatus State { get; set; }
+
+        public IEventAttendance Attendance { get; set; }
     }
 
-    public class MissionTimelineEntry : TimelineEntry<MissionAttendance, Mission>
+    public class MissionTimelineEntry : TimelineEntry
     {
 
     }
 
-    public class TrainingTimelineEntry : TimelineEntry<TrainingAttendance, Training>
+    public class TrainingTimelineEntry : TimelineEntry
     {
 
     }

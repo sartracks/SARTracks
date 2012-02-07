@@ -35,6 +35,9 @@ namespace SarTracks.Website.Models
             this.JoinKey = Guid.NewGuid();
             this.UnitStatusTypes = new List<UnitStatusType>();
             this.Memberships = new List<UnitMembership>();
+
+            this.LinksFromOrgs = new List<OrganizationLink>();
+            this.LinksToOrgs = new List<OrganizationLink>();
         }
 
         [Required]
@@ -71,8 +74,12 @@ namespace SarTracks.Website.Models
 
         public ICollection<UnitMembership> Memberships { get; set; }
 
-        [ForeignKey("DesignatorsFrom")]
-        public Guid? DesignatorsFromId { get; set; }
-        public Organization DesignatorsFrom { get; set; }
+        [InverseProperty("FromOrganization")]
+        public ICollection<OrganizationLink> LinksToOrgs { get; set; }
+
+        [InverseProperty("ToOrganization")]
+        public ICollection<OrganizationLink> LinksFromOrgs { get; set; }
+
+        public bool GetsWorkerNumberFromAuthoritative { get; set; }
     }
 }

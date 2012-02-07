@@ -24,7 +24,7 @@ namespace SarTracks.Website.Models
     using System.Text;
    
     
-    public class Training : SarEvent<TrainingAttendance>
+    public class Training : SarEvent<TrainingAttendance, TrainingTimelineEntry>
     {
         public ICollection<TrainingCourse> OfferedCourses { get; set; }
     }

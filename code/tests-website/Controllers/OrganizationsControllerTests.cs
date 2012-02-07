@@ -25,59 +25,120 @@ namespace SarTracks.Tests.Website.Controllers
     using SarTracks.Website.Controllers;
     using SarTracks.Website.Models;
     using SarTracks.Website.Services;
+    using SarTracks.Website.ViewModels;
 
 #if MS_TEST
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Security.Principal;
+    using System.Threading;
 #else
     using NUnit.Framework;
     using TestClassAttribute = NUnit.Framework.TestFixtureAttribute;
     using TestMethodAttribute = NUnit.Framework.TestCaseAttribute;
 #endif
 
-    public class TestPermissionsCache : PermissionsServiceCache
-    {
-        public void SetInstance(string username, IPermissionsService service)
-        {
-            if (PermissionsServiceCache.cache.ContainsKey(username))
-            {
-                PermissionsServiceCache.cache[username] = service;
-            }
-            else
-            {
-                PermissionsServiceCache.cache.Add(username, service);
-            }
-        }
-    }
-
     [TestClass]
     public class OrganizationsControllerTests
     {
         [TestMethod]
-        public void List()
+        public void Organization_CreateApproveDelete()
         {
-            OrganizationsControllerTests c = new OrganizationsControllerTests();
-            RequestContext context = new RequestContext();
-         
-   
+            string orgName = "TestOrg";
+
+            //var perms = new Mock<AuthIdentityService>();
+            //perms.Setup(f => f.HasPermission(PermissionType.SiteAdmin, null)).Returns(true);
+            User admin;
+            var perms = new Mock<AuthIdentityService>();
+
+            using (DataStoreService store = new DataStoreService("admin"))
+            {
+                admin = store.Users.Single(f => f.Username == "admin");
+                perms.Setup(f => f.User).Returns(admin);
+                perms.Setup(f => f.UserLogin).Returns(admin.Username);
+
+                var org = store.Organizations.SingleOrDefault(f => f.Name == orgName);
+                using (var controller = new OrganizationsController(perms.Object, new DataStoreFactory()))
+                {
+                    var mocks = new ContextMocks(controller);
+                    mocks.Request.Setup(r => r.AcceptTypes).Returns(new[] { "application/json" });
+
+                    if (org != null)
+                    {
+                        var removeResult = controller.DoDeleteOrganization(org.Id);
+                    }
+                }
+            }
+
+
+            using (var controller = new OrganizationsController(perms.Object, new DataStoreFactory()))
+            {
+                var mocks = new ContextMocks(controller);
+                mocks.Request.Setup(r => r.AcceptTypes).Returns(new[] { "application/json" });
+
+                var action = controller.Create();
+                var view = (ViewResult)action;
+                Assert.AreEqual(2, view.ViewData.Count, "ViewData should contain 2 items");
+                Assert.IsTrue(view.ViewData.ContainsKey(OrganizationsController.VIEWDATA_LIST_TIMEZONES), "ViewData should have timezone select list");
+                Assert.IsTrue(view.ViewData.ContainsKey(OrganizationsController.VIEWDATA_LIST_VISIBILITY), "ViewData should have visibility select list");
+
+                action = controller.Create(new NewOrganizationViewModel { Org = new Organization { Name = orgName, LongName = "Long Test Org Name", TimeZone = "Pacific Standard Time" }, Visibility = "Users" });
+                var redirect = (RedirectToRouteResult)action;
+                Assert.AreEqual(2, redirect.RouteValues.Count);
+                Assert.AreEqual(false, redirect.Permanent);
+                Assert.AreEqual(string.Empty, redirect.RouteName);
+
+                Guid newOrgId = Guid.Empty;
+                using (var store = new DataStoreService(admin.Username))
+                {
+                    var newOrg = store.Organizations.SingleOrDefault(f => f.Name == orgName);
+                    Assert.IsNotNull(newOrg, "New organization was not created");
+                    newOrgId = newOrg.Id;
+
+                    Assert.AreEqual(false, newOrg.IsApproved, "Org should start out as not approved");
+                }
+
+                controller.SetOrganizationApproved(newOrgId, true);
+                using (var store = new DataStoreService(admin.Username))
+                {
+                    var newOrg = store.Organizations.SingleOrDefault(f => f.Name == orgName);
+                    Assert.AreEqual(true, newOrg.IsApproved, "Org should now be approved");
+                }
+
+                controller.DoDeleteOrganization(newOrgId);
+                using (var store = new DataStoreService(admin.Username))
+                {
+                    var newOrg = store.Organizations.SingleOrDefault(f => f.Name == orgName);
+                    Assert.IsNull(newOrg, "New organization was not removed");
+                }
+
+            }
         }
+
+        //[TestMethod]
+        //public void List()
+        //{
+        //    OrganizationsControllerTests c = new OrganizationsControllerTests();
+        //    RequestContext context = new RequestContext();
+        //}
 
         [TestMethod]
         public void Organization_GetEditForm()
         {
             // SETUP
-            var controller = new OrganizationsController();
-
             TestStore store = ((TestStore)DevWebsiteDataInitializer.FillDefaultDevSet(new TestStore())).FixupReferences();
+            Organization org = store.Organizations.First();
 
-            Mock<PermissionsService> perms = new Mock<PermissionsService>();
-            perms.Setup(x => x.IsUserInRole("testuser", "Administrators")).Returns(false);
-            perms.Setup(x => x.Username).Returns("testuser");
-            new TestPermissionsCache().SetInstance("testuser", perms.Object);
+            var perms = new Mock<AuthIdentityService>();
+            perms.Setup(f => f.HasPermission(PermissionType.AdminOrganization, org.Id)).Returns(true);
 
-            DataStoreService.TestStore = store;
+            var controller = new OrganizationsController(perms.Object, new DataStoreFactory(store));
+
+            var mocks = new ContextMocks(controller);
+            mocks.Request.Setup(r => r.Url).Returns(new Uri("https://test.local"));
+            mocks.Request.Setup(r => r.AcceptTypes).Returns(new[] { "application/json" });
 
             // TEST
-            Organization org = store.Organizations.First();
             UnitStatusType type = org.UnitStatusTypes.First();
 
             PartialViewResult result = (PartialViewResult)controller.EditStatus(org.Id, type.Id);
@@ -96,23 +157,19 @@ namespace SarTracks.Tests.Website.Controllers
         [TestMethod]
         public void Basic_AddStatusType()
         {
+            TestStore store = ((TestStore)DevWebsiteDataInitializer.FillDefaultDevSet(new TestStore())).FixupReferences();
+            Organization org = store.Organizations.First();
+
+            Mock<AuthIdentityService> perms = new Mock<AuthIdentityService>();
+            perms.Setup(f => f.HasPermission(PermissionType.AdminOrganization, org.Id)).Returns(true);
+
             // SETUP
-            var controller = new OrganizationsController();
+            var controller = new OrganizationsController(perms.Object, new DataStoreFactory(store));
             var mocks = new ContextMocks(controller);
             mocks.Request.Setup(r => r.AcceptTypes).Returns(new[] { "application/json" });
 
-            TestStore store = ((TestStore)DevWebsiteDataInitializer.FillDefaultDevSet(new TestStore())).FixupReferences();
-
-            Mock<PermissionsService> perms = new Mock<PermissionsService>();
-            perms.Setup(x => x.IsUserInRole("testuser", "Administrators")).Returns(true);
-            perms.Setup(x => x.Username).Returns("testuser");
-            new TestPermissionsCache().SetInstance("testuser", perms.Object);
-
-            DataStoreService.TestStore = store;
+            int beginCount = org.UnitStatusTypes.Count;
             
-            Organization org = store.Organizations.First();
-            Assert.AreEqual(2, org.UnitStatusTypes.Count);
-
             // TEST
             UnitStatusType type = new UnitStatusType { Name = "Test Type", IsMissionQualified = false, IsActive = true };
 
@@ -122,7 +179,7 @@ namespace SarTracks.Tests.Website.Controllers
             // VERIFY
             Assert.AreEqual(0, model.Errors.Length);
             //Assert.AreEqual(robert.Id, model.Result.OrganizationId, "Org ID should have been populated");
-            Assert.AreEqual(3, org.UnitStatusTypes.Count);
+            Assert.AreEqual(beginCount + 1, org.UnitStatusTypes.Count);
 
             UnitStatusType savedType = org.UnitStatusTypes.Single(f => f.Id == type.Id);
             Assert.AreEqual(type.Name, savedType.Name);

@@ -25,7 +25,6 @@
 @*    <link href="@Url.Content("~/Content/Site.css")" rel="stylesheet" type="text/css" />
     <link href="@Url.Content("~/Content/common.css")" rel="stylesheet" type="text/css" />
 *@
-    <link href="@Url.Content("~/Content/style.css")" rel="stylesheet" type="text/css" />
     <link href="@Url.Content("~/Content/themes/base/jquery.ui.all.css")" rel="stylesheet" type="text/css" />
     <link href="@Url.Content("~/Content/themes/base/jquery.ui.base.css")" rel="stylesheet" type="text/css" />
     <link href="@Url.Content("~/Content/themes/base/jquery.ui.core.css")" rel="stylesheet" type="text/css" />
@@ -34,6 +33,7 @@
     <link href="@Url.Content("~/Content/themes/base/jquery.ui.selectable.css")" rel="stylesheet" type="text/css" />
     <link href="@Url.Content("~/Content/themes/base/jquery.ui.theme.css")" rel="stylesheet" type="text/css" />
     <link href="@Url.Content("~/Content/themes/base/jquery.ui.dialog.css")" rel="stylesheet" type="text/css" />
+    <link href="@Url.Content("~/Content/style.css")" rel="stylesheet" type="text/css" />
     <!--[if lt IE 8]>
     <link href="@Url.Content("~/Content/ie7.css")" rel="stylesheet" type="text/css" />
     <![endif]-->
@@ -56,7 +56,7 @@
     <div class="page">
         <header>
             <div id="title">
-                SARTracks @Html.Image("~/Content/images/tracks.png")
+                @(Html.ActionLink<HomeController>(f => f.Index(), "SARTracks")) @Html.Image("~/Content/images/tracks.png")
             </div>
             <div id="logindisplay">
                 @Html.Partial("_LogOnPartial")
@@ -69,9 +69,9 @@
             @if (ViewBag.Heading != null) { <h2>@Html.Raw(ViewBag.Heading)</h2> }
 
             @ConditionalDiv(ViewData["alert"], "border:solid 2px black; padding:.3em; margin:1em")
-            @ConditionalDiv(ViewData["success"], "border:solid 2px #008800; color:#008800; padding:.3em; margin:1em;")
+            @ConditionalDiv(ViewData["success"], "success-box")
             @ConditionalDiv(ViewData["warning"], "warning-box")
-            @ConditionalDiv(ViewData["error"], "border:solid 2px red; color:red; padding:.3em; margin:1em")
+            @ConditionalDiv(ViewData["error"], "error-box")
 
             @RenderBody()
         </section>
@@ -142,6 +142,7 @@
                 buttons: {
                 }
             });
+            formsInit();
         });
     </script>
 </body>

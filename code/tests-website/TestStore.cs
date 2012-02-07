@@ -36,6 +36,10 @@ namespace SarTracks.Tests.Website
             this.Trainings = new InMemoryDbSet<Training>();
             this.Log = new InMemoryDbSet<LogEntry>();
             this.ExternalReferences = new InMemoryDbSet<ExternalReference>();
+            this.PendingChanges = new InMemoryDbSet<ChangeRequest>();
+            this.Users = new InMemoryDbSet<User>();
+            this.Roles = new InMemoryDbSet<Role>();
+            this.Authorization = new InMemoryDbSet<Authorization>();
         }
 
         public IDbSet<SarMember> Members { get; set; }
@@ -45,6 +49,10 @@ namespace SarTracks.Tests.Website
         public IDbSet<TrainingCourse> TrainingCourses { get; set; }
         public IDbSet<LogEntry> Log { get; set; }
         public IDbSet<ExternalReference> ExternalReferences { get; set; }
+        public IDbSet<ChangeRequest> PendingChanges { get; set; }
+        public IDbSet<User> Users { get; set; }
+        public IDbSet<Role> Roles { get; set; }
+        public IDbSet<Authorization> Authorization { get; set; }
 
         void IDisposable.Dispose()
         {
@@ -59,7 +67,7 @@ namespace SarTracks.Tests.Website
         {
             foreach (var o in this.Organizations)
             {
-                o.DesignatorsFromId = (o.DesignatorsFrom == null) ? (Guid?)null : o.DesignatorsFrom.Id;
+                //o.DesignatorsFromId = (o.DesignatorsFrom == null) ? (Guid?)null : o.DesignatorsFrom.Id;
                 foreach (var m in o.Memberships)
                 {
                     m.OrganizationId = o.Id;
@@ -69,7 +77,7 @@ namespace SarTracks.Tests.Website
                 foreach (var u in o.UnitStatusTypes)
                 {
                     u.Organization = o;
-                }
+                }                
             }
 
             foreach (var m in this.Members)
@@ -87,6 +95,11 @@ namespace SarTracks.Tests.Website
                 {
                     a.MemberId = m.Id;
                 }
+            }
+
+            foreach (var a in this.Authorization)
+            {
+                if (a.Role != null) a.RoleId = a.Role.Id;
             }
 
             return this;

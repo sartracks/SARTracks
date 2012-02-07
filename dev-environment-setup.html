@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head>
+    <title>SARTracks Dev Environment Setup</title>
+</head>
+<body>
+<h2>SARTracks Dev Environment Setup</h2>
+<p>From a clean Windows 7 machine (2/6/2012):</p>
+
+<h3>Setup <strong>git</strong></h3>
+<ol>
+<li>Get credentials from <a href="mailto:matt@cosand.net">Matt Cosand</a></li>
+<li>Install git from <a href="http://code.google.com/p/msysgit/downloads/list?can=3&q=official+Git">http://code.google.com/p/msysgit/downloads/list?can=3&q=official+Git</a> (default settings OK)</li>
+<li>In GIT Bash: <code>cd /c/; git svn clone -s --username &lt;username&gt; https://www.kingcountysar.org:444/svn/sartracks sartracks</code></li>
+</ol>
+
+
+
+<h3>Setup build environment</h3>
+<ol>
+<li>Install and run <a href="http://www.microsoft.com/web/downloads/platform.aspx">Microsoft Web Platform Installer</a></li>
+<li>Use WPI to install ASP.NET MVC 3, Sql Expres 2008 R2, IIS 7.5 Express, .NET 4.0, SQL Server Management Studio (optional)</li>
+<li>Download and install <a href="http://www.microsoft.com/download/en/details.aspx?displaylang=en&id=26660">EF June CTP 2011</a> (only need EF part)</li>
+<li>Add <code>%WINDOWS%\Microsoft.NET\Framework\v4.0.30319</code> to PATH environment variable.</li>
+<li>If Visual Studio not installed: copy WebApplication targets from sartracks\build\msbuild\microsoft to \Program Files\MSBuild ("Program Files (x86)" as needed).</li>
+</ol>
+
+<h3>Build</h3>
+<ol>
+<li><code>cd \sartracks\code\website</code></li>
+<li><code>msbuild</code></li>
+</ol>
+
+<h3>Run</h3>
+<ol>
+<li>"\Program Files\IIS Express\iisexpress.exe" /path:c:\sartracks\code\website /port:25489</li>
+<li>Point browser to <a href="http://localhost:25489/">http://localhost:25489</a></li>
+</ol>
+</body>
+</html>

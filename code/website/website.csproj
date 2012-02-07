@@ -94,13 +94,18 @@
     <Compile Include="JsonDataContractResult.cs" />
     <Compile Include="JsonGenericDataResult.cs" />
     <Compile Include="Models\Address.cs" />
+    <Compile Include="Models\ChangeRequest.cs" />
+    <Compile Include="Models\Authorization.cs" />
     <Compile Include="Models\Enums.cs" />
     <Compile Include="Models\ExternalReference.cs" />
     <Compile Include="Models\LogEntry.cs" />
     <Compile Include="Models\MemberAddress.cs" />
     <Compile Include="Models\MemberContact.cs" />
     <Compile Include="Models\Mission.cs" />
+    <Compile Include="Models\MissionUnitResponse.cs" />
     <Compile Include="Models\Organization.cs" />
+    <Compile Include="Models\OrganizationLink.cs" />
+    <Compile Include="Models\Role.cs" />
     <Compile Include="Models\SarEvent.cs" />
     <Compile Include="Models\SarMember.cs" />
     <Compile Include="Models\SarObject.cs" />
@@ -110,24 +115,27 @@
     <Compile Include="Models\TrainingCourse.cs" />
     <Compile Include="Models\UnitMembership.cs" />
     <Compile Include="Models\UnitStatusType.cs" />
+    <Compile Include="Models\User.cs" />
     <Compile Include="Models\WellKnownPlace.cs" />
-    <Compile Include="NestedRoleProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\DataStoreService.cs" />
     <Compile Include="Services\EmbeddedResourceUrlService.cs" />
     <Compile Include="Services\ExcelService.cs" />
     <Compile Include="Services\MailService.cs" />
     <Compile Include="Services\OpenIdRelyingPartyService.cs" />
-    <Compile Include="Services\PermissionsService.cs" />
+    <Compile Include="Services\AuthIdentityService.cs" />
     <Compile Include="SubmitResult.cs" />
     <Compile Include="UrlExtensions.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="ViewModels\AccountModels.cs" />
+    <Compile Include="ViewModels\OrgSettingsViewModel.cs" />
+    <Compile Include="ViewModels\RoleSecurityViewModel.cs" />
     <Compile Include="ViewModels\DesignatorsViewModel.cs" />
     <Compile Include="ViewModels\EventSummaryView.cs" />
     <Compile Include="ViewModels\HomePageViewModel.cs" />
     <Compile Include="ViewModels\NameIdPair.cs" />
     <Compile Include="ViewModels\NavButtonViewModel.cs" />
+    <Compile Include="ViewModels\NewOrganizationViewModel.cs" />
     <Compile Include="ViewModels\NewUnitMemberViewModel.cs" />
     <Compile Include="ViewModels\RosterViewModel.cs" />
     <Compile Include="XmlDataContractResult.cs" />
@@ -136,10 +144,12 @@
   <ItemGroup>
     <Content Include="Content\common.css" />
     <Content Include="Content\ie7.css" />
+    <Content Include="Content\images\admin.png" />
     <Content Include="Content\images\bg-column-left.png" />
     <Content Include="Content\images\bg-poster-tile.jpg" />
     <Content Include="Content\images\bg-poster.jpg" />
     <Content Include="Content\images\bullet.png" />
+    <Content Include="Content\images\calendar.gif" />
     <Content Include="Content\images\delete.png" />
     <Content Include="Content\images\easel.png" />
     <Content Include="Content\images\easel_bw.png" />
@@ -186,15 +196,23 @@
     <Content Include="Content\themes\base\jquery.ui.tabs.css" />
     <Content Include="Content\themes\base\jquery.ui.theme.css" />
     <Content Include="Global.asax" />
-    <Content Include="knockout.html" />
     <Content Include="Scripts\break.js" />
     <Content Include="Scripts\common.js" />
     <Content Include="Scripts\jquery-1.7.1.min.js" />
+    <Content Include="Scripts\jquery-ui-1.8.11.js" />
     <Content Include="Scripts\jquery-ui-1.8.11.min.js" />
     <Content Include="Scripts\jquery.cookie.js" />
     <Content Include="Scripts\jquery.tablesorter.js" />
+    <Content Include="Scripts\jquery.validate-vsdoc.js" />
+    <Content Include="Scripts\jquery.validate.js" />
     <Content Include="Scripts\jquery.validate.min.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
+    <Content Include="Scripts\jquery.validate.unobtrusive.min.js" />
+    <Content Include="Scripts\knockout-2.0.0.debug.js" />
+    <Content Include="Scripts\knockout-2.0.0.Release.js" />
+    <Content Include="Scripts\knockout.mapping-latest.debug.js" />
+    <Content Include="Scripts\knockout.mapping-latest.Release.js" />
+    <Content Include="Scripts\modernizr-1.7.js" />
     <Content Include="Scripts\modernizr-1.7.min.js" />
     <None Include="Content\files\sample-roster-import.xls" />
     <None Include="Content\files\sample-roster-import.xlsx" />
@@ -231,14 +249,13 @@
     <Content Include="Views\Units\RosterManagement.cshtml" />
     <Content Include="Views\Units\ImportRoster.cshtml" />
     <Content Include="Views\Units\ImportRosterResults.cshtml" />
+    <Content Include="Views\Organizations\Settings.cshtml" />
+    <Content Include="Views\Organizations\StatusManagement.cshtml" />
     <Content Include="Views\Members\ContactManagement.cshtml" />
+    <Content Include="Views\Missions\Roster.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
-    <Folder Include="Views\Missions\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\Account\_LogOnOpenId.cshtml" />
@@ -262,9 +279,6 @@
     <Content Include="Views\Account\Verified.cshtml" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Views\Admin\Users.cshtml" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="Views\Organizations\List.cshtml" />
   </ItemGroup>
   <ItemGroup>
@@ -274,7 +288,7 @@
     <Content Include="Views\Account\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Views\Organizations\StatusTypes.cshtml" />
+    <Content Include="Views\Organizations\_StatusTypes.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\Organizations\StatusForm.cshtml" />
@@ -300,7 +314,7 @@
     <VisualStudio>
       <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
         <WebProjectProperties>
-          <UseIIS>False</UseIIS>
+          <UseIIS>True</UseIIS>
           <AutoAssignPort>True</AutoAssignPort>
           <DevelopmentServerPort>25489</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
