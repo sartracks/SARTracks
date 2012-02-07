@@ -9,17 +9,15 @@
 
 <h3>Setup <strong>git</strong></h3>
 <ol>
-<li>Get credentials from <a href="mailto:matt@cosand.net">Matt Cosand</a></li>
-<li>Install git from <a href="http://code.google.com/p/msysgit/downloads/list?can=3&q=official+Git">http://code.google.com/p/msysgit/downloads/list?can=3&q=official+Git</a> (default settings OK)</li>
-<li>In GIT Bash: <code>cd /c/; git svn clone -s --username &lt;username&gt; https://www.kingcountysar.org:444/svn/sartracks sartracks</code></li>
+<li><a href="http://help.github.com/win-set-up-git/">GitHub setup</a>.</li>
+<li><code>git clone git@github.com:sartracks/SARTracks \sartracks</code></li>
 </ol>
-
 
 
 <h3>Setup build environment</h3>
 <ol>
 <li>Install and run <a href="http://www.microsoft.com/web/downloads/platform.aspx">Microsoft Web Platform Installer</a></li>
-<li>Use WPI to install ASP.NET MVC 3, Sql Expres 2008 R2, IIS 7.5 Express, .NET 4.0, SQL Server Management Studio (optional)</li>
+<li>Use platform installer to install ASP.NET MVC 3, Sql Expres 2008 R2, IIS 7.5 Express, .NET 4.0, SQL Server Management Studio (optional)</li>
 <li>Download and install <a href="http://www.microsoft.com/download/en/details.aspx?displaylang=en&id=26660">EF June CTP 2011</a> (only need EF part)</li>
 <li>Add <code>%WINDOWS%\Microsoft.NET\Framework\v4.0.30319</code> to PATH environment variable.</li>
 <li>If Visual Studio not installed: copy WebApplication targets from sartracks\build\msbuild\microsoft to \Program Files\MSBuild ("Program Files (x86)" as needed).</li>
