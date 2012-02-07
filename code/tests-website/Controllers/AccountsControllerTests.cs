@@ -4,13 +4,19 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using SarTracks.Website.Controllers;
     using SarTracks.Website.Services;
     using Moq;
     using SarTracks.Website.Models;
     using SarTracks.Website.ViewModels;
     using System.Web.Mvc;
+#if MS_TEST
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+#else
+    using NUnit.Framework;
+    using TestClassAttribute = NUnit.Framework.TestFixtureAttribute;
+    using TestMethodAttribute = NUnit.Framework.TestCaseAttribute;
+#endif
 
     [TestClass]
     public class AccountsControllerTests
@@ -35,7 +41,7 @@
 
             // Verify
             Assert.IsNotNull(result.Data);
-            Assert.IsInstanceOfType(result.Data, typeof(IEnumerable<string>));
+            Assert.IsNotNull(result.Data as IEnumerable<string>);
             var data = ((IEnumerable<string>)result.Data).ToArray();
             Assert.AreEqual(3, data.Length);
             Assert.IsTrue(data.Any(f => f == "[" + org.Name + "] foo"));

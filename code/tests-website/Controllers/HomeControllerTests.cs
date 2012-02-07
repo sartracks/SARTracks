@@ -4,13 +4,19 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using SarTracks.Website.Controllers;
     using SarTracks.Website.Services;
     using Moq;
     using SarTracks.Website.Models;
     using System.Web.Mvc;
     using SarTracks.Website.ViewModels;
+#if MS_TEST
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+#else
+    using NUnit.Framework;
+    using TestClassAttribute = NUnit.Framework.TestFixtureAttribute;
+    using TestMethodAttribute = NUnit.Framework.TestCaseAttribute;
+#endif
 
     [TestClass]
     public class HomeControllerTests
@@ -41,13 +47,13 @@
             var result = controller.Index();
 
             // Verify
-            Assert.IsInstanceOfType(result, typeof(ViewResult));
+            Assert.IsNotNull(result as ViewResult, "result is ViewResult");
 
             var view = (ViewResult)result;
             
             Assert.IsNotNull(view.Model, "Did not return model");
 
-            Assert.IsInstanceOfType(view.Model, typeof(HomePageViewModel));
+            Assert.IsNotNull(view.Model as HomePageViewModel);
             var model = (HomePageViewModel)view.Model;
 
             Assert.IsTrue(model.HasAccount);

@@ -21,10 +21,10 @@ namespace SarTracks.Tests.Website.Services
     using System.Linq;
     using SarTracks.Website.Models;
     using SarTracks.Website.Services;
+    using System.Collections.Generic;
 
 #if MS_TEST
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System.Collections.Generic;
 #else
     using NUnit.Framework;
     using TestClassAttribute = NUnit.Framework.TestFixtureAttribute;

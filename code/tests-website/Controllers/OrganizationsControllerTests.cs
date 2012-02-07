@@ -17,9 +17,9 @@
  */
 namespace SarTracks.Tests.Website.Controllers
 {
+    using System;
     using System.Linq;
     using System.Web.Mvc;
-    using System.Web.Routing;
     using Moq;
     using SarTracks.Website;
     using SarTracks.Website.Controllers;
@@ -29,9 +29,6 @@ namespace SarTracks.Tests.Website.Controllers
 
 #if MS_TEST
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System;
-    using System.Security.Principal;
-    using System.Threading;
 #else
     using NUnit.Framework;
     using TestClassAttribute = NUnit.Framework.TestFixtureAttribute;
